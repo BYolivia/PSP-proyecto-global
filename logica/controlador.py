@@ -1,10 +1,13 @@
 import platform
-from contextlib import nullcontext
 
-_OS = nullcontext
+
+_os = None
 
 def getPlataforma():
-    if _OS== nullcontext:
+    global _os
+    if _os==None:
+        _os = _obtener_datos_sistema()
+    return _os
 
 
 def accion_placeholder(nombre_accion):
@@ -24,10 +27,10 @@ def _obtener_datos_sistema():
     tmpVar = platform.system().lower()
     if tmpVar.__contains__("windows"):
         print("Sistema operativo detectado: Windows")
-        return {"WINDOWS"}
+        return {'WINDOWS'}
     elif tmpVar.__contains__("darwin"):
         print("Sistema operativo detectado: MacOS")
-        return {"MACOS"}
+        return {'MACOS'}
     else:
         print("Sistema operativo detectado: Linux/Unix")
-        return {"LINUX"}
+        return {'LINUX'}

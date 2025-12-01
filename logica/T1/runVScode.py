@@ -5,10 +5,6 @@ import platform
 def abrir_vscode():
     """
     Intenta abrir Visual Studio Code utilizando el comando 'code'.
-
-    Este comando asume que VS Code ha sido instalado correctamente y que
-    el ejecutable 'code' está disponible en el PATH del sistema (lo cual
-    suele ser el caso si se habilita la opción al instalar VS Code).
     """
     comando = 'code'
 

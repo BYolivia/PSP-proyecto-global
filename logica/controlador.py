@@ -1,36 +1,44 @@
 import platform
-
+from pathlib import Path
 
 _os = None
 
+_root_dir = Path(__file__).parent.parent
+_scripts_dir = _root_dir / "res" / "scripts"
+
+# --- Funciones de Configuración y Sistema ---
+
+def get_scripts_dir():
+    """Devuelve la ruta absoluta al directorio de scripts."""
+    return _scripts_dir
+
 def getPlataforma():
+    """Detecta y devuelve el conjunto que identifica el SO ('WINDOWS', 'LINUX', 'MACOS')."""
     global _os
-    if _os==None:
+    if _os is None:
         _os = _obtener_datos_sistema()
     return _os
 
-
-def accion_placeholder(nombre_accion):
-    """
-    Función placeholder temporal para acciones que aún no tienen implementación.
-    Simplemente imprime un mensaje en la consola.
-    """
-    print(f"Acción pendiente de implementación: {nombre_accion}")
-
 def _obtener_datos_sistema():
-    """
-    Función placeholder para la tarea T1.3 (recursos del sistema).
-    Esta función se llenará con la lógica para obtener datos de CPU/RAM.
-    """
-    print("Iniciando la recopilación de datos del sistema...")
-    # Lógica a añadir aquí en el futuro (usando psutil, por ejemplo)
+    """Lógica para detectar el sistema operativo."""
     tmpVar = platform.system().lower()
-    if tmpVar.__contains__("windows"):
+
+    if "windows" in tmpVar:
         print("Sistema operativo detectado: Windows")
         return {'WINDOWS'}
-    elif tmpVar.__contains__("darwin"):
+    elif "darwin" in tmpVar:
         print("Sistema operativo detectado: MacOS")
         return {'MACOS'}
     else:
         print("Sistema operativo detectado: Linux/Unix")
         return {'LINUX'}
+
+# --- Función Placeholder ---
+
+def accion_placeholder(nombre_accion):
+    """
+    Función placeholder temporal para acciones que aún no tienen implementación.
+    """
+    print(f"Acción pendiente de implementación: {nombre_accion}")
+
+# Nota: La lógica de 'subprocess.run' se encuentra ahora en logica/T1/backup.py.

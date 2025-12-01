@@ -1,6 +1,8 @@
 ## Requisitos ##
 tkinter => hay que instalar python3-tk
 
+matplotlib => pip install matplotlib 
+psutil => pip install psutil
 ## Como Ejecutar ##
 > [!NOTE]
 > Desde la carpeta anterior

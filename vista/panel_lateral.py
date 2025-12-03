@@ -3,11 +3,12 @@
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
-from logica.controlador import accion_placeholder, getPlataforma
+from logica.controlador import accion_placeholder
 from logica.T1.backup import accion_backup_t1
 from logica.T1.runVScode import abrir_vscode
 from logica.T1.textEditor import cargar_contenido_res_notes, guardar_contenido_res_notes
-import os
+from logica.T1.openBrowser import navegar_a_url
+
 
 
 class PanelLateral(ttk.Frame):
@@ -17,20 +18,24 @@ class PanelLateral(ttk.Frame):
     # no intente expandir el panel lateral más allá de lo deseado.
     ANCHO_CARACTERES_FIJO = 35
 
+    ANCHO_CARACTERES_FIJO = 35
+
     def __init__(self, parent, central_panel=None, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
         self.central_panel = central_panel
 
         self.configurar_estilos_locales(parent)
 
-        # 1. Entrada superior (amarilla) - Aplicamos el ancho fijo
-        ttk.Entry(self, width=self.ANCHO_CARACTERES_FIJO, style='Yellow.TEntry').pack(fill="x", pady=10, padx=5,
-                                                                                      ipady=3)
+        # 1. Entrada superior (amarilla) - ¡Guardamos la referencia!
+        self.entrada_superior = ttk.Entry(self, width=self.ANCHO_CARACTERES_FIJO, style='Yellow.TEntry')
+        self.entrada_superior.pack(fill="x", pady=10, padx=5, ipady=3)
+        self.entrada_superior.bind('<Return>', self.manejar_navegacion)  # Opcional: Ejecutar con Enter
 
         # 2. Área de Extracción/Navegación
         acciones_extraccion = [
             ("Extraer datos", self.manejar_extraccion_datos),
-            ("Navegar", lambda: accion_placeholder("Navegar")),
+            # 2. Asignamos el nuevo método de manejo a este botón
+            ("Navegar", self.manejar_navegacion),
             ("Buscar API Google", lambda: accion_placeholder("Buscar API Google"))
         ]
         self.crear_seccion(self, titulo="", acciones=acciones_extraccion)
@@ -49,19 +54,28 @@ class PanelLateral(ttk.Frame):
         ]
         self.crear_seccion(self, titulo="Procesos batch", acciones=acciones_batch)
 
-        # 5. Espacio expandible (Empuja los elementos superiores hacia arriba)
+        # 5. Espacio expandible
         tk.Frame(self, height=1).pack(expand=True, fill="both")
 
-        # 6. Panel de Notas (Editor res/notes, ubicado abajo)
+        # 6. Panel de Notas
         self.crear_editor_res_notes()
 
+    # --- NUEVO MÉTODO PARA MANEJAR LA NAVEGACIÓN ---
+    def manejar_navegacion(self, event=None):
+        """
+        Obtiene el texto de la entrada superior y llama a la función de navegación.
+        """
+        url = self.entrada_superior.get()
+        if navegar_a_url(url):
+            # Limpiar la casilla si la navegación fue exitosa
+            self.entrada_superior.delete(0, tk.END)
     # --- LÓGICA DEL EDITOR res/notes ---
 
     def crear_editor_res_notes(self):
         """Crea el editor de texto simple para el archivo res/notes."""
 
         ttk.Label(self, text="Editor Simple (res/notes)", font=('Arial', 11, 'bold')).pack(fill="x", pady=(10, 0),
-                                                                                           padx=5)
+                    padx=5)
 
         frame_editor = ttk.Frame(self, padding=5)
         frame_editor.pack(fill="x", padx=5, pady=(0, 10))

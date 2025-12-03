@@ -16,13 +16,15 @@ python -m ProyectoGlobal
 
 1. Lanzar aplicaciones externas con parámetros (por ejemplo navegadores externos con url)
 
-2. Copias de seguridad realizadas con scripts powershell (.ps1)
+2. ~~Copias de seguridad realizadas con scripts powershell (.ps1)~~
 
-3. Ver los recursos del sistema (memoria, procesador, hilos, etc.) utilizando gráficas (matplotlib) gráficos de barras, de áreas, líneas, etc.
+3. ~~Ver los recursos del sistema (memoria, procesador, hilos, etc.) utilizando gráficas (matplotlib) gráficos de barras, de áreas, líneas, etc.~~
 
 4. Editor de texto (estilo notepad).
 
 5. Hilo que cuente en kilobytes el tráfico de entrada y de salida de nuestra conexión de red. psutil.net_io_counters()
+
+6. ~~Abrir VScode desde el programa~~
 
 ### T2. Multihilos ###
 

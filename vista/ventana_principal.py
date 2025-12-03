@@ -9,6 +9,9 @@ from vista.panel_central import PanelCentral
 class VentanaPrincipal(tk.Tk):
     """Clase principal de la aplicación que monta la interfaz con estilos nativos mejorados."""
 
+    # Definimos el ancho deseado para el panel lateral
+    ANCHO_PANEL_LATERAL = 300
+
     def __init__(self):
         super().__init__()
         self.title("Proyecto Integrado - PSP (Estilo Moderno Nativo)")
@@ -23,6 +26,7 @@ class VentanaPrincipal(tk.Tk):
         # Configuración del manejador de protocolo para el botón de cierre (X)
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
 
+        # Columna 0 (Lateral) no se expande (weight=0), Columna 1 (Central) sí se expande (weight=1)
         self.grid_rowconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=0)
         self.grid_columnconfigure(0, weight=0)
@@ -31,7 +35,6 @@ class VentanaPrincipal(tk.Tk):
         self.crear_paneles_principales()
         self.crear_barra_inferior()
 
-    # ... (código de configurar_estilos) ...
     def configurar_estilos(self, s: ttk.Style):
         """Define estilos visuales personalizados sin dependencias externas."""
 
@@ -61,15 +64,18 @@ class VentanaPrincipal(tk.Tk):
         s.map('TNotebook.Tab', background=[('selected', COLOR_FONDO)], foreground=[('selected', COLOR_ACCION)])
 
     def crear_paneles_principales(self):
-        """Ensambla el panel lateral y el panel central en la rejilla."""
+        """Ensambla el panel lateral y el panel central en la rejilla, asegurando el ancho del lateral."""
 
-        # Panel Central (debe crearse primero)
+        # Panel Central (se expande en columna 1)
         self.panel_central = PanelCentral(self)
         self.panel_central.grid(row=0, column=1, sticky="nswe", padx=(5, 10), pady=10)
 
-        # Panel Lateral (se le pasa la referencia del Central)
-        self.panel_lateral = PanelLateral(self, central_panel=self.panel_central)
+        # Panel Lateral (se le aplica un ancho fijo para que no se expanda con el contenido)
+        self.panel_lateral = PanelLateral(self, central_panel=self.panel_central, width=self.ANCHO_PANEL_LATERAL)
         self.panel_lateral.grid(row=0, column=0, sticky="nswe", padx=(10, 5), pady=10)
+
+        # Forzamos que el widget base respete el ancho definido, ignorando el tamaño del contenido (propagate=False)
+        self.panel_lateral.grid_propagate(False)
 
     # --- FUNCIÓN DE CIERRE ---
     def on_closing(self):
@@ -78,14 +84,13 @@ class VentanaPrincipal(tk.Tk):
         y cierra la ventana principal de forma limpia.
         """
         if self.panel_central:
-            # Llamar al método de limpieza del Panel Central
+            # Llamar al método de limpieza del Panel Central (ciclo tk.after)
             self.panel_central.detener_actualizacion_automatica()
 
         # Destruir el objeto Tkinter y terminar mainloop
         self.destroy()
         print("Aplicación cerrada limpiamente.")
 
-    # ... (código de crear_barra_inferior) ...
     def crear_barra_inferior(self):
         """Crea la barra de estado o información inferior."""
         frame_inferior = ttk.Frame(self, relief="flat", padding=[10, 5, 10, 5], style='TFrame', borderwidth=0)

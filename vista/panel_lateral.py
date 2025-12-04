@@ -9,16 +9,15 @@ from logica.T1.runVScode import abrir_vscode
 from logica.T1.textEditor import cargar_contenido_res_notes, guardar_contenido_res_notes
 from logica.T1.openBrowser import navegar_a_url
 
+# --- IMPORTACIÓN DE CONSTANTES DESDE vista/config.py ---
+from vista.config import *
 
 
 class PanelLateral(ttk.Frame):
     """Contiene el menú de botones, entradas para las tareas y el editor simple para res/notes."""
 
-    # Definimos un ancho fijo en caracteres. Esto es crucial para que Tkinter
-    # no intente expandir el panel lateral más allá de lo deseado.
-    ANCHO_CARACTERES_FIJO = 35
-
-    ANCHO_CARACTERES_FIJO = 35
+    # Usamos la constante importada
+    ANCHO_CARACTERES_FIJO = ANCHO_CARACTERES_PANEL_LATERAL
 
     def __init__(self, parent, central_panel=None, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
@@ -26,15 +25,15 @@ class PanelLateral(ttk.Frame):
 
         self.configurar_estilos_locales(parent)
 
-        # 1. Entrada superior (amarilla) - ¡Guardamos la referencia!
+        # 1. Entrada superior (amarilla)
         self.entrada_superior = ttk.Entry(self, width=self.ANCHO_CARACTERES_FIJO, style='Yellow.TEntry')
         self.entrada_superior.pack(fill="x", pady=10, padx=5, ipady=3)
-        self.entrada_superior.bind('<Return>', self.manejar_navegacion)  # Opcional: Ejecutar con Enter
+        self.entrada_superior.bind('<Return>', self.manejar_navegacion)
 
         # 2. Área de Extracción/Navegación
         acciones_extraccion = [
-            ("Extraer datos", self.manejar_extraccion_datos),
-            # 2. Asignamos el nuevo método de manejo a este botón
+            # NOTA: Cambiamos el nombre de este comando si maneja una acción manual
+            ("Actualizar Recursos", self.manejar_extraccion_datos),
             ("Navegar", self.manejar_navegacion),
             ("Buscar API Google", lambda: accion_placeholder("Buscar API Google"))
         ]
@@ -69,27 +68,29 @@ class PanelLateral(ttk.Frame):
         if navegar_a_url(url):
             # Limpiar la casilla si la navegación fue exitosa
             self.entrada_superior.delete(0, tk.END)
+
     # --- LÓGICA DEL EDITOR res/notes ---
 
     def crear_editor_res_notes(self):
         """Crea el editor de texto simple para el archivo res/notes."""
 
-        ttk.Label(self, text="Editor Simple (res/notes)", font=('Arial', 11, 'bold')).pack(fill="x", pady=(10, 0),
-                    padx=5)
+        # Usando FUENTE_NEGOCIOS
+        ttk.Label(self, text="Editor Simple (res/notes)", font=FUENTE_NEGOCIOS).pack(fill="x", pady=(10, 0),
+                                                                                     padx=5)
 
         frame_editor = ttk.Frame(self, padding=5)
         frame_editor.pack(fill="x", padx=5, pady=(0, 10))
 
-        # 1. Widget de texto - Aplicamos el ancho fijo
+        # 1. Widget de texto - Aplicamos el ancho fijo, COLOR_BLANCO y FUENTE_MONO
         self.notes_text_editor = tk.Text(
             frame_editor,
             height=8,
             width=self.ANCHO_CARACTERES_FIJO,
             wrap="word",
-            bg='white',
+            bg=COLOR_BLANCO,
             relief="solid",
             borderwidth=1,
-            font=('Consolas', 9)  # Fuente tipo terminal
+            font=FUENTE_MONO  # Fuente tipo terminal
         )
         self.notes_text_editor.pack(fill="x", expand=False)
 
@@ -97,19 +98,18 @@ class PanelLateral(ttk.Frame):
         frame_botones = ttk.Frame(frame_editor)
         frame_botones.pack(fill="x", pady=(5, 0))
 
-        # Se usa 'SmallAction.TButton' para reducir el padding y asegurar que quepan
         ttk.Button(frame_botones, text="Guardar", command=self.guardar_res_notes, style='SmallAction.TButton').pack(
             side=tk.RIGHT)
         ttk.Button(frame_botones, text="Cargar", command=self.cargar_res_notes, style='SmallAction.TButton').pack(
             side=tk.LEFT)
 
-        self.cargar_res_notes(initial_load=True)  # Carga inicial
+        self.cargar_res_notes(initial_load=True)
 
     def cargar_res_notes(self, initial_load=False):
         """Carga el contenido de res/notes al editor de texto lateral."""
         contenido = cargar_contenido_res_notes()
 
-        self.notes_text_editor.delete("1.0", tk.END)  # Limpiar contenido actual
+        self.notes_text_editor.delete("1.0", tk.END)
 
         if "Error al cargar:" in contenido:
             self.notes_text_editor.insert(tk.END, contenido)
@@ -123,9 +123,6 @@ class PanelLateral(ttk.Frame):
 
     def guardar_res_notes(self):
         """Guarda el contenido del editor de texto lateral en res/notes."""
-        # CORRECCIÓN: Quitamos .strip() para que el guardado refleje fielmente el contenido
-        # del widget, incluyendo saltos de línea finales, lo que soluciona la confusión
-        # de que "se guarda, pero el archivo está vacío".
         contenido = self.notes_text_editor.get("1.0", tk.END)
 
         success, message = guardar_contenido_res_notes(contenido)
@@ -140,12 +137,12 @@ class PanelLateral(ttk.Frame):
     # --- MÉTODOS EXISTENTES ---
     def manejar_extraccion_datos(self):
         """
-        Llama a la lógica de actualización del gráfico de recursos
-        en el panel central (actualización manual).
+        Llama a la lógica de actualización del gráfico de recursos en el panel central (actualización manual).
         """
+        # NOTA: Renombramos a 'actualizar_recursos' para ser consistente con panel_central.py
         if self.central_panel:
             print("Activando actualización del gráfico de Recursos (Manual)...")
-            self.central_panel.actualizar_grafico_recursos()
+            self.central_panel.actualizar_recursos()
         else:
             messagebox.showerror("Error", "El Panel Central no está inicializado.")
 
@@ -160,29 +157,35 @@ class PanelLateral(ttk.Frame):
             messagebox.showerror("❌ Error en el Backup", message)
 
     def configurar_estilos_locales(self, parent):
-        """Configura estilos para los widgets del panel lateral."""
+        """Configura estilos para los widgets del panel lateral, usando constantes importadas."""
         style = ttk.Style(parent)
 
-        # Estilos existentes
-        style.configure('Yellow.TEntry', fieldbackground='#fff8e1', foreground='#333333', padding=[5, 5],
+        # Estilos existentes (Usando constantes importadas)
+        style.configure('Yellow.TEntry', fieldbackground='#fff8e1', foreground=COLOR_TEXTO, padding=[5, 5],
                         relief='solid', borderwidth=1)
-        style.configure('Green.TButton', background='#4CAF50', foreground='white', font=('Arial', 10, 'bold'),
-                        relief='flat', padding=[10, 5])
-        style.map('Green.TButton', background=[('active', '#388E3C'), ('pressed', '#1B5E20')])
 
-        style.configure('Action.TButton', background='#0078d4', foreground='white', font=('Arial', 10, 'bold'),
+        # Botones de Acción (Green.TButton)
+        style.configure('Green.TButton', background=COLOR_EXITO, foreground=COLOR_BLANCO, font=FUENTE_NEGOCIOS,
                         relief='flat', padding=[10, 5])
-        style.map('Action.TButton', background=[('active', '#005a9e'), ('pressed', '#003c6e')])
+        style.map('Green.TButton', background=[('active', '#388E3C'), ('pressed',
+                                                                       '#1B5E20')])  # Manteniendo los tonos verdes originales para hover/pressed
 
-        # NUEVO ESTILO: Botones pequeños para el editor de notas
-        style.configure('SmallAction.TButton', background='#0078d4', foreground='white', font=('Arial', 9, 'bold'),
-                        relief='flat', padding=[5, 3])  # <-- Padding reducido
-        style.map('SmallAction.TButton', background=[('active', '#005a9e'), ('pressed', '#003c6e')])
+        # Botones de Acción Global (Action.TButton)
+        style.configure('Action.TButton', background=COLOR_ACCION, foreground=COLOR_BLANCO, font=FUENTE_NEGOCIOS,
+                        relief='flat', padding=[10, 5])
+        style.map('Action.TButton', background=[('active', COLOR_ACCION_HOVER), ('pressed', COLOR_ACCION_PRESSED)])
+
+        # NUEVO ESTILO: Botones pequeños para el editor de notas (SmallAction.TButton)
+        style.configure('SmallAction.TButton', background=COLOR_ACCION, foreground=COLOR_BLANCO,
+                        font=('Arial', 9, 'bold'),
+                        relief='flat', padding=[5, 3])
+        style.map('SmallAction.TButton', background=[('active', COLOR_ACCION_HOVER), ('pressed', COLOR_ACCION_PRESSED)])
 
     def crear_seccion(self, parent_frame, titulo, acciones):
         """Función helper para crear secciones de etiquetas y botones."""
         if titulo:
-            ttk.Label(parent_frame, text=titulo, font=('Arial', 11, 'bold')).pack(fill="x", pady=(10, 0), padx=5)
+            # Usando FUENTE_NEGOCIOS
+            ttk.Label(parent_frame, text=titulo, font=FUENTE_NEGOCIOS).pack(fill="x", pady=(10, 0), padx=5)
 
         frame_botones = ttk.Frame(parent_frame, style='TFrame')
         frame_botones.pack(fill="x", pady=5, padx=5)

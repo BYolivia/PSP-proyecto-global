@@ -2,7 +2,11 @@
 tkinter => hay que instalar python3-tk
 
 matplotlib => pip install matplotlib 
+
 psutil => pip install psutil
+
+python-vlc => pip install python-vlc
+
 ## Como Ejecutar ##
 > [!NOTE]
 > Desde la carpeta anterior
@@ -28,12 +32,14 @@ python -m ProyectoGlobal
 
 ### T2. Multihilos ###
 
-1. Hora del sistema / Fecha del sistema
+1. ~~Hora del sistema / Fecha del sistema~~
 
-2. Programar Alarma (aviso visual y sonoro al pasar X minutos)
+2. ~~Temperatura local~~ 
 
-3. Scraping
+3. Programar Alarma (aviso visual y sonoro al pasar X minutos)
 
-4. Juego de los camellos / autos de choque / etc. (aplicar resolución de sincronización para evitar problemas de interbloqueos)
+4. Scraping
 
-5. Música de fondo (reproducción de mp3 o midi)
+5. Juego de los camellos / autos de choque / etc. (aplicar resolución de sincronización para evitar problemas de interbloqueos)
+
+6. Música de fondo (reproducción de mp3 o midi)

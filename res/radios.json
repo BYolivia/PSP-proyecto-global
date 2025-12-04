@@ -1,0 +1,20 @@
+[
+    {
+        "nombre": "Esencia FM",
+        "url_stream": "https://stream.serviciospararadios.es/listen/esencia_fm/esenciafm.mp3",
+        "pais": "ES",
+        "genero": null
+    },
+    {
+        "nombre": "Bikini FM",
+        "url_stream": "https://stream.emisorasmusicales.net/listen/bikini_fm/bikinifm-vlc.mp3",
+        "pais": "ES",
+        "genero": "La radio remember"
+    },
+    {
+        "nombre": "Activa FM",
+        "url_stream": "https://stream.serviciospararadios.es/listen/activa_fm/activafm-tunein.mp3",
+        "pais": "ES",
+        "genero": null
+    }
+]

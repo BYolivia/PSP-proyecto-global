@@ -16,7 +16,7 @@ class VentanaPrincipal(tk.Tk):
 
     def __init__(self):
         super().__init__()
-        self.title("Proyecto Integrado - PSP (Estilo Moderno Nativo)")
+        self.title("Proyecto Integrado - PSP")
         self.geometry("1200x800")
 
         self.label_reloj = None
@@ -79,7 +79,7 @@ class VentanaPrincipal(tk.Tk):
     def crear_paneles_principales(self):
         """Ensambla el panel lateral y el panel central en la rejilla, asegurando el ancho del lateral."""
 
-        self.panel_central = PanelCentral(self)
+        self.panel_central = PanelCentral(self, self)
         self.panel_central.grid(row=0, column=1, sticky="nswe", padx=(5, 10), pady=10)
 
         # Usando la constante importada

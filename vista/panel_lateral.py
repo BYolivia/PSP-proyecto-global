@@ -6,36 +6,35 @@ from tkinter import messagebox
 from logica.controlador import accion_placeholder
 from logica.T1.backup import accion_backup_t1
 from logica.T1.runVScode import abrir_vscode
-# NO necesitamos importar cargar/guardar notas aquí, ya que la lógica se mueve al Panel Central
-# from logica.T1.textEditor import cargar_contenido_res_notes, guardar_contenido_res_notes
 from logica.T1.openBrowser import navegar_a_url
+from logica.T2.scraping import hacer_scraping  # <--- NUEVA IMPORTACIÓN DE SCRAPING
 
 # --- IMPORTACIÓN DE CONSTANTES DESDE vista/config.py ---
+# Asumo que este archivo existe y contiene las constantes de color/fuente
 from vista.config import *
-
 
 class PanelLateral(ttk.Frame):
     """Contiene el menú de botones y entradas para las tareas."""
 
-    # Usamos la constante importada
     ANCHO_CARACTERES_FIJO = ANCHO_CARACTERES_PANEL_LATERAL
 
     def __init__(self, parent, central_panel=None, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
-        # La referencia al PanelCentral es esencial para iniciar la carrera y acceder a sus métodos
         self.central_panel = central_panel
 
         self.configurar_estilos_locales(parent)
 
-        # 1. Entrada superior (amarilla)
+        # 1. Entrada superior (barra de entrada)
         self.entrada_superior = ttk.Entry(self, width=self.ANCHO_CARACTERES_FIJO, style='Yellow.TEntry')
         self.entrada_superior.pack(fill="x", pady=10, padx=5, ipady=3)
         self.entrada_superior.bind('<Return>', self.manejar_navegacion)
 
         # 2. Área de Extracción/Navegación
         acciones_extraccion = [
-            ("Actualizar Recursos", self.manejar_extraccion_datos),
-            ("Navegar", self.manejar_navegacion),
+            # CAMBIO: Botón renombrado y vinculado a la nueva lógica de scraping
+            ("Extraer Datos", self.manejar_extraccion_datos),
+            ("Ir a la URL usando el navegador", self.manejar_navegacion),
+            # El botón de Google se mantiene como placeholder, esperando la implementación
             ("Buscar API Google", lambda: accion_placeholder("Buscar API Google"))
         ]
         self.crear_seccion(self, titulo="", acciones=acciones_extraccion)
@@ -57,13 +56,37 @@ class PanelLateral(ttk.Frame):
         self.crear_seccion(self, titulo="Procesos batch", acciones=acciones_batch)
 
         # 5. Espacio expandible
-        # Ahora este marco se expandirá para ocupar todo el espacio restante.
         tk.Frame(self, height=1).pack(expand=True, fill="both")
 
-        # 6. Panel de Notas - ELIMINADO: Se moverá a la pestaña Tareas del Panel Central.
-        # self.crear_editor_res_notes() # <--- LÍNEA ELIMINADA
-
     # --- MÉTODOS DE LÓGICA / CONTROL ---
+
+    def manejar_extraccion_datos(self):
+        """
+        Obtiene el término de búsqueda de la entrada superior, realiza el scraping
+        en Wikipedia (URL base fija), muestra el resultado y lo carga en el Panel Central.
+        """
+        # Obtenemos el texto introducido por el usuario (el término de búsqueda)
+        termino_busqueda = self.entrada_superior.get().strip()
+
+        if not termino_busqueda:
+            messagebox.showwarning("⚠️ Entrada Vacía",
+                                   "Por favor, introduce un término de búsqueda para extraer datos.")
+            return
+
+        # Llama a la lógica de scraping. Se esperan 3 valores: éxito, mensaje y contenido.
+        success, message, contenido = hacer_scraping(termino_busqueda)
+
+        if success:
+            messagebox.showinfo("✅ Extracción Exitosa", message)
+
+            # Llamada al Panel Central para visualizar el resultado del scraping
+            if self.central_panel:
+                self.central_panel.cargar_texto_en_tareas(termino_busqueda, contenido)
+            else:
+                messagebox.showerror("Error", "No se puede visualizar el resultado: Panel Central no disponible.")
+
+        else:
+            messagebox.showerror("❌ Error de Extracción", message)
 
     def manejar_inicio_carrera_t2(self):
         """
@@ -71,15 +94,13 @@ class PanelLateral(ttk.Frame):
         """
         if self.central_panel:
             print("Botón App2 presionado. Iniciando Carrera de Camellos en Panel Central...")
-            # Llamada a la función expuesta por PanelCentral
             self.central_panel.manejar_inicio_carrera()
 
             # Opcional: Cambiar automáticamente a la pestaña Resultados
-            if "Resultados" in self.central_panel.tabs:
-                notebook = self.central_panel.tabs["Resultados"].winfo_toplevel().winfo_children()[0]
+            if "Carrera" in self.central_panel.tabs:
+                notebook = self.central_panel.tabs["Carrera"].winfo_toplevel().winfo_children()[0]
                 if isinstance(notebook, ttk.Notebook):
-                    # Asume que el Notebook es el primer widget hijo del frame principal
-                    notebook.select(self.central_panel.tabs["Resultados"])
+                    notebook.select(self.central_panel.tabs["Carrera"])
         else:
             messagebox.showerror("Error", "El Panel Central no está inicializado.")
 
@@ -90,21 +111,6 @@ class PanelLateral(ttk.Frame):
         url = self.entrada_superior.get()
         if navegar_a_url(url):
             self.entrada_superior.delete(0, tk.END)
-
-    # --- MÉTODOS DE NOTAS ELIMINADOS (Se moverán a PanelCentral) ---
-    # def crear_editor_res_notes(self): ...
-    # def cargar_res_notes(self, initial_load=False): ...
-    # def guardar_res_notes(self): ...
-
-    def manejar_extraccion_datos(self):
-        """
-        Llama a la lógica de actualización del gráfico de recursos en el panel central (actualización manual).
-        """
-        if self.central_panel:
-            print("Activando actualización del gráfico de Recursos (Manual)...")
-            self.central_panel.actualizar_recursos()
-        else:
-            messagebox.showerror("Error", "El Panel Central no está inicializado.")
 
     def manejar_backup(self):
         """Llama a la lógica de backup de T1 e informa al usuario del resultado."""
@@ -146,4 +152,5 @@ class PanelLateral(ttk.Frame):
         frame_botones.pack(fill="x", pady=5, padx=5)
 
         for texto_boton, comando in acciones:
+            # Usamos el estilo 'Green.TButton' para los botones de acción principal
             ttk.Button(frame_botones, text=texto_boton, command=comando, style='Green.TButton').pack(fill="x", pady=5)

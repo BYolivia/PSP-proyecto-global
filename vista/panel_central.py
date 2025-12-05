@@ -497,7 +497,7 @@ class PanelCentral(ttk.Frame):
         sub_notebook = ttk.Notebook(parent_frame)
         sub_notebook.grid(row=0, column=0, sticky="nsew")
 
-        sub_tabs = ["Recursos", "Resultados", "Radios", "Navegador", "Correos", "Tareas", "Alarmas", "Enlaces"]
+        sub_tabs = ["Recursos", "Carrera", "Radios", "Navegador", "Correos", "Tareas", "Alarmas", "Enlaces"]
         self.tabs = {}
 
         for i, sub_tab_text in enumerate(sub_tabs):
@@ -513,7 +513,7 @@ class PanelCentral(ttk.Frame):
                 self.canvas_widget = self.canvas.get_tk_widget()
                 self.canvas_widget.pack(expand=True, fill="both")
 
-            elif sub_tab_text == "Resultados":
+            elif sub_tab_text == "Carrera":
                 self.crear_interfaz_carrera(frame)
 
             elif sub_tab_text == "Radios":

@@ -7,6 +7,12 @@ psutil => pip install psutil
 
 python-vlc => pip install python-vlc
 
+bs4 => pip install bs4
+
+
+
+requests => pip install requests
+
 ## Como Ejecutar ##
 > [!NOTE]
 > Desde la carpeta anterior
@@ -36,7 +42,7 @@ python -m ProyectoGlobal
 
 2. ~~Temperatura local~~ 
 
-3. Programar Alarma (aviso visual y sonoro al pasar X minutos)
+3. ~~Programar Alarma (aviso visual y sonoro al pasar X minutos)~~
 
 4. Scraping
 

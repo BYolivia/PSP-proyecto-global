@@ -3,43 +3,81 @@
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
+
+# --- Módulos de Lógica Existente ---
+# Asumiendo que estos módulos existen en la estructura lógica del proyecto
 from logica.controlador import accion_placeholder
 from logica.T1.backup import accion_backup_t1
 from logica.T1.runVScode import abrir_vscode
 from logica.T1.openBrowser import navegar_a_url
-from logica.T2.scraping import hacer_scraping  # <--- NUEVA IMPORTACIÓN DE SCRAPING
+from logica.T2.scraping import hacer_scraping
 
-# --- IMPORTACIÓN DE CONSTANTES DESDE vista/config.py ---
-# Asumo que este archivo existe y contiene las constantes de color/fuente
+# --- Módulos de Vistas ---
+# Importamos la clase RadioPanel, que contiene los controles de música (Play/Pause y Volumen).
+from vista.central_panel.view_radio import RadioPanel
 from vista.config import *
 
-class PanelLateral(ttk.Frame):
-    """Contiene el menú de botones y entradas para las tareas."""
 
+class PanelLateral(ttk.Frame):
+    """
+    Panel lateral izquierdo de la aplicación.
+    Contiene la barra de entrada, botones de lógica (Extracción, Navegación, Backup)
+    y los controles de música esenciales.
+    """
+
+    # Usamos la constante definida en vista/config.py
     ANCHO_CARACTERES_FIJO = ANCHO_CARACTERES_PANEL_LATERAL
 
-    def __init__(self, parent, central_panel=None, *args, **kwargs):
+    def __init__(self, parent, root, panel_central, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
-        self.central_panel = central_panel
+        self.root = root
+        self.panel_central = panel_central
+        self.controles_musica = None
 
-        self.configurar_estilos_locales(parent)
+        self.entrada_superior = None
 
-        # 1. Entrada superior (barra de entrada)
-        self.entrada_superior = ttk.Entry(self, width=self.ANCHO_CARACTERES_FIJO, style='Yellow.TEntry')
-        self.entrada_superior.pack(fill="x", pady=10, padx=5, ipady=3)
+        self.configurar_estilos_locales(root)
+
+        # Configuración de Layout Principal
+        self.grid_rowconfigure(99, weight=1)  # Permite que la Fila 99 se expanda
+        self.grid_columnconfigure(0, weight=1)
+
+        # Creación de Secciones
+        self.crear_barra_de_entrada()  # Fila 0
+        self.crear_seccion_acciones()  # Fila 1
+        self.crear_seccion_aplicaciones()  # Fila 2
+        self.crear_seccion_batch()  # Fila 3
+
+        # Separador y Espacio Expandible
+        ttk.Separator(self, orient='horizontal').grid(row=4, column=0, sticky="ew", pady=(10, 0))
+        tk.Frame(self, height=1).grid(row=99, column=0, sticky="nsew")
+
+        self.crear_controles_musica()  # Fila 100
+
+    # -------------------------------------------------------------
+    # 🖼️ ESTRUCTURA Y WIDGETS
+    # -------------------------------------------------------------
+
+    def crear_barra_de_entrada(self):
+        """Crea la entrada superior para URL/Scraping."""
+        frame_entrada = ttk.Frame(self, style='TFrame', padding="10 5 10 0")
+        frame_entrada.grid(row=0, column=0, sticky="ew")
+
+        self.entrada_superior = ttk.Entry(frame_entrada, width=self.ANCHO_CARACTERES_FIJO, style='Yellow.TEntry')
+        self.entrada_superior.pack(fill="x", ipady=3)
         self.entrada_superior.bind('<Return>', self.manejar_navegacion)
 
-        # 2. Área de Extracción/Navegación
+    def crear_seccion_acciones(self):
+        """Crea los botones de Extracción/Navegación."""
         acciones_extraccion = [
-            # CAMBIO: Botón renombrado y vinculado a la nueva lógica de scraping
-            ("Extraer Datos", self.manejar_extraccion_datos),
+            ("Extraer Datos (Wikipedia)", self.manejar_extraccion_datos),
             ("Ir a la URL usando el navegador", self.manejar_navegacion),
-            # El botón de Google se mantiene como placeholder, esperando la implementación
             ("Buscar API Google", lambda: accion_placeholder("Buscar API Google"))
         ]
-        self.crear_seccion(self, titulo="", acciones=acciones_extraccion)
+        self._crear_bloque_botones(self, titulo="Extracción/Navegación", acciones=acciones_extraccion, grid_row=1)
 
-        # 3. Área de Aplicaciones
+    def crear_seccion_aplicaciones(self):
+        """Crea los botones de apertura de aplicaciones."""
         app2_comando = self.manejar_inicio_carrera_t2
 
         acciones_aplicaciones = [
@@ -47,25 +85,36 @@ class PanelLateral(ttk.Frame):
             ("App2 (Carrera 🏁)", app2_comando),
             ("App3", lambda: accion_placeholder("App3"))
         ]
-        self.crear_seccion(self, titulo="Aplicaciones", acciones=acciones_aplicaciones)
+        self._crear_bloque_botones(self, titulo="Aplicaciones", acciones=acciones_aplicaciones, grid_row=2)
 
-        # 4. Área de Procesos Batch
+    def crear_seccion_batch(self):
+        """Crea el botón de Copias de seguridad."""
         acciones_batch = [
             ("Copias de seguridad", self.manejar_backup)
         ]
-        self.crear_seccion(self, titulo="Procesos batch", acciones=acciones_batch)
+        self._crear_bloque_botones(self, titulo="Procesos batch", acciones=acciones_batch, grid_row=3)
 
-        # 5. Espacio expandible
-        tk.Frame(self, height=1).pack(expand=True, fill="both")
+    def crear_controles_musica(self):
+        """Crea el área para alojar los controles de música/radio."""
+        frame_musica = ttk.Frame(self, style='TFrame', padding="15 10")
+        frame_musica.grid(row=100, column=0, sticky="ew")
+        frame_musica.grid_columnconfigure(0, weight=1)
 
-    # --- MÉTODOS DE LÓGICA / CONTROL ---
+        # Instancia la clase RadioPanel, que ahora contiene solo Play/Pause y Volumen
+        self.controles_musica = RadioPanel(frame_musica, self.root)
+        self.controles_musica.grid(row=0, column=0, sticky="nsew")
+
+        frame_musica.grid_rowconfigure(0, weight=1)
+
+    # -------------------------------------------------------------
+    # ⏯️ MÉTODOS DE LÓGICA / CONTROL
+    # -------------------------------------------------------------
 
     def manejar_extraccion_datos(self):
         """
-        Obtiene el término de búsqueda de la entrada superior, realiza el scraping
-        en Wikipedia (URL base fija), muestra el resultado y lo carga en el Panel Central.
+        Obtiene el término de búsqueda, realiza el scraping, y carga el resultado
+        en el módulo Navegador del Panel Central.
         """
-        # Obtenemos el texto introducido por el usuario (el término de búsqueda)
         termino_busqueda = self.entrada_superior.get().strip()
 
         if not termino_busqueda:
@@ -73,15 +122,13 @@ class PanelLateral(ttk.Frame):
                                    "Por favor, introduce un término de búsqueda para extraer datos.")
             return
 
-        # Llama a la lógica de scraping. Se esperan 3 valores: éxito, mensaje y contenido.
         success, message, contenido = hacer_scraping(termino_busqueda)
 
         if success:
             messagebox.showinfo("✅ Extracción Exitosa", message)
 
-            # Llamada al Panel Central para visualizar el resultado del scraping
-            if self.central_panel:
-                self.central_panel.cargar_texto_en_tareas(termino_busqueda, contenido)
+            if self.panel_central:
+                self.panel_central.cargar_contenido_web(f"Scraping: {termino_busqueda}", contenido)
             else:
                 messagebox.showerror("Error", "No se puede visualizar el resultado: Panel Central no disponible.")
 
@@ -92,21 +139,15 @@ class PanelLateral(ttk.Frame):
         """
         Llama al método 'manejar_inicio_carrera' del Panel Central.
         """
-        if self.central_panel:
+        if self.panel_central:
             print("Botón App2 presionado. Iniciando Carrera de Camellos en Panel Central...")
-            self.central_panel.manejar_inicio_carrera()
-
-            # Opcional: Cambiar automáticamente a la pestaña Resultados
-            if "Carrera" in self.central_panel.tabs:
-                notebook = self.central_panel.tabs["Carrera"].winfo_toplevel().winfo_children()[0]
-                if isinstance(notebook, ttk.Notebook):
-                    notebook.select(self.central_panel.tabs["Carrera"])
+            self.panel_central.manejar_inicio_carrera()
         else:
             messagebox.showerror("Error", "El Panel Central no está inicializado.")
 
     def manejar_navegacion(self, event=None):
         """
-        Obtiene el texto de la entrada superior y llama a la función de navegación.
+        Obtiene el texto de la entrada superior y llama a la función de navegación (abrir navegador externo).
         """
         url = self.entrada_superior.get()
         if navegar_a_url(url):
@@ -122,6 +163,10 @@ class PanelLateral(ttk.Frame):
         else:
             messagebox.showerror("❌ Error en el Backup", message)
 
+    # -------------------------------------------------------------
+    # ⚙️ MÉTODOS HELPER
+    # -------------------------------------------------------------
+
     def configurar_estilos_locales(self, parent):
         """Configura estilos para los widgets del panel lateral, usando constantes importadas."""
         style = ttk.Style(parent)
@@ -131,8 +176,7 @@ class PanelLateral(ttk.Frame):
 
         style.configure('Green.TButton', background=COLOR_EXITO, foreground=COLOR_BLANCO, font=FUENTE_NEGOCIOS,
                         relief='flat', padding=[10, 5])
-        style.map('Green.TButton', background=[('active', '#388E3C'), ('pressed',
-                                                                       '#1B5E20')])
+        style.map('Green.TButton', background=[('active', '#388E3C'), ('pressed', '#1B5E20')])
 
         style.configure('Action.TButton', background=COLOR_ACCION, foreground=COLOR_BLANCO, font=FUENTE_NEGOCIOS,
                         relief='flat', padding=[10, 5])
@@ -143,14 +187,16 @@ class PanelLateral(ttk.Frame):
                         relief='flat', padding=[5, 3])
         style.map('SmallAction.TButton', background=[('active', COLOR_ACCION_HOVER), ('pressed', COLOR_ACCION_PRESSED)])
 
-    def crear_seccion(self, parent_frame, titulo, acciones):
-        """Función helper para crear secciones de etiquetas y botones."""
-        if titulo:
-            ttk.Label(parent_frame, text=titulo, font=FUENTE_NEGOCIOS).pack(fill="x", pady=(10, 0), padx=5)
+    def _crear_bloque_botones(self, parent_frame, titulo, acciones, grid_row):
+        """Función helper para crear secciones de etiquetas y botones usando GRID."""
 
-        frame_botones = ttk.Frame(parent_frame, style='TFrame')
-        frame_botones.pack(fill="x", pady=5, padx=5)
+        frame_seccion = ttk.Frame(parent_frame, style='TFrame', padding="10 0 10 5")
+        frame_seccion.grid(row=grid_row, column=0, sticky="ew")
+
+        if titulo:
+            frame_titulo = ttk.Frame(frame_seccion, style='TFrame')
+            frame_titulo.pack(fill="x", pady=(10, 0))
+            ttk.Label(frame_titulo, text=titulo, font=FUENTE_NEGOCIOS).pack(anchor="w", padx=5)
 
         for texto_boton, comando in acciones:
-            # Usamos el estilo 'Green.TButton' para los botones de acción principal
-            ttk.Button(frame_botones, text=texto_boton, command=comando, style='Green.TButton').pack(fill="x", pady=5)
+            ttk.Button(frame_seccion, text=texto_boton, command=comando, style='Green.TButton').pack(fill="x", pady=5)

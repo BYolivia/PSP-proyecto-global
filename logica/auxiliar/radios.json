@@ -1,0 +1,38 @@
+[
+    {
+        "nombre": "Esencia FM",
+        "url_stream": "https://stream.serviciospararadios.es/listen/esencia_fm/esenciafm.mp3",
+        "pais": "ES",
+        "genero": null
+    },
+    {
+        "nombre": "Bikini FM",
+        "url_stream": "https://stream.emisorasmusicales.net/listen/bikini_fm/bikinifm-vlc.mp3",
+        "pais": "ES",
+        "genero": "La radio remember"
+    },
+    {
+        "nombre": "Activa FM",
+        "url_stream": "https://stream.serviciospararadios.es/listen/activa_fm/activafm-tunein.mp3",
+        "pais": "ES",
+        "genero": null
+    },
+    {
+        "nombre": "Cope Denia",
+        "url_stream": "https://denia-copesedes-rrcast.flumotion.com/copesedes/denia-low.mp3",
+        "pais": "ES",
+        "genero": "Noticias"
+    },
+    {
+        "nombre": "KPOO",
+        "url_stream": "http://amber.streamguys.com:5220/xstream",
+        "pais": null,
+        "genero": null
+    },
+    {
+        "nombre": "Cope Valencia",
+        "url_stream": "https://valencia-copesedes-rrcast.flumotion.com/copesedes/valencia-low.mp3",
+        "pais": "ES",
+        "genero": "Noticias"
+    }
+]

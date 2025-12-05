@@ -1,6 +1,5 @@
 # Módulo: logica/T1/graficos.py
 
-import psutil
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -12,28 +11,23 @@ historial_net_in = []
 historial_net_out = []
 
 
-def actualizar_historial_datos(net_in_kb, net_out_kb):
+def actualizar_historial_datos(net_in_kb, net_out_kb, cpu_percent, ram_percent):
     """
-    Recopila los datos actuales de CPU, RAM y añade los datos de Red
-    pasados como argumento a sus historiales.
+    Recopila los datos actuales de CPU, RAM y Red pasados como argumento a sus historiales.
     """
-    # 1. Obtener datos básicos (CPU y RAM)
-    # interval=None asegura que se use el tiempo transcurrido desde la última llamada
-    # a psutil.cpu_percent (o 0.0 si es la primera vez en este proceso)
-    cpu_percent = psutil.cpu_percent(interval=None)
-    ram_percent = psutil.virtual_memory().percent
+    # 🎯 CORRECCIÓN: Los datos de CPU/RAM ahora vienen como argumentos, no se calculan aquí.
 
-    # 2. Añadir CPU y gestionar la longitud
+    # 1. Añadir CPU y gestionar la longitud
     historial_cpu.append(cpu_percent)
     if len(historial_cpu) > MAX_PUNTOS:
         historial_cpu.pop(0)
 
-    # 3. Añadir RAM y gestionar la longitud
+    # 2. Añadir RAM y gestionar la longitud
     historial_ram.append(ram_percent)
     if len(historial_ram) > MAX_PUNTOS:
         historial_ram.pop(0)
 
-    # 4. Añadir Red y gestionar la longitud
+    # 3. Añadir Red y gestionar la longitud
     historial_net_in.append(net_in_kb)
     historial_net_out.append(net_out_kb)
 
@@ -99,17 +93,6 @@ def crear_grafico_recursos(figure):
     max_out = max(historial_net_out) if historial_net_out else 0
     y_limit_net = max(max_in, max_out) * 1.2  # 20% de margen
     y_limit_net = max(y_limit_net, 10)  # Mínimo de 10 KB/s
-
-    configurar_ejes_historial(
-        ax_net,
-        'Tráfico de Red (KB/s) - IN: {:.1f} KB/s | OUT: {:.1f} KB/s'.format(
-            historial_net_in[-1] if historial_net_in else 0,
-            historial_net_out[-1] if historial_net_out else 0
-        ),
-        'gray', [0] * MAX_PUNTOS,  # Usamos un color de base para la configuración
-        y_limit_net,
-        [0, y_limit_net * 0.5, y_limit_net * 0.9]
-    )
 
     # Sobreescribir las líneas para mostrar IN y OUT
     ax_net.clear()  # Limpiamos para redibujar con las dos líneas

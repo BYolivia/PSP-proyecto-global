@@ -40,6 +40,6 @@ python -m ProyectoGlobal
 
 4. Scraping
 
-5. Juego de los camellos / autos de choque / etc. (aplicar resolución de sincronización para evitar problemas de interbloqueos)
+5. ~~Juego de los camellos~~ / autos de choque / etc. (aplicar resolución de sincronización para evitar problemas de interbloqueos)
 
-6. Música de fondo (reproducción de mp3 o midi)
+6. ~~Música de fondo (reproducción de mp3 o midi)~~

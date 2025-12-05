@@ -6,7 +6,8 @@ from tkinter import messagebox
 from logica.controlador import accion_placeholder
 from logica.T1.backup import accion_backup_t1
 from logica.T1.runVScode import abrir_vscode
-from logica.T1.textEditor import cargar_contenido_res_notes, guardar_contenido_res_notes
+# NO necesitamos importar cargar/guardar notas aquí, ya que la lógica se mueve al Panel Central
+# from logica.T1.textEditor import cargar_contenido_res_notes, guardar_contenido_res_notes
 from logica.T1.openBrowser import navegar_a_url
 
 # --- IMPORTACIÓN DE CONSTANTES DESDE vista/config.py ---
@@ -14,14 +15,14 @@ from vista.config import *
 
 
 class PanelLateral(ttk.Frame):
-    """Contiene el menú de botones, entradas para las tareas y el editor simple para res/notes."""
+    """Contiene el menú de botones y entradas para las tareas."""
 
     # Usamos la constante importada
     ANCHO_CARACTERES_FIJO = ANCHO_CARACTERES_PANEL_LATERAL
 
     def __init__(self, parent, central_panel=None, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
-        # La referencia al PanelCentral es esencial para iniciar la carrera
+        # La referencia al PanelCentral es esencial para iniciar la carrera y acceder a sus métodos
         self.central_panel = central_panel
 
         self.configurar_estilos_locales(parent)
@@ -40,15 +41,11 @@ class PanelLateral(ttk.Frame):
         self.crear_seccion(self, titulo="", acciones=acciones_extraccion)
 
         # 3. Área de Aplicaciones
-
-        # --- CAMBIO CLAVE: CONEXIÓN DE APP2 ---
-
-        # Definimos el comando para App2 usando el método que llama a PanelCentral
         app2_comando = self.manejar_inicio_carrera_t2
 
         acciones_aplicaciones = [
             ("Visual Code", abrir_vscode),
-            ("App2 (Carrera 🏁)", app2_comando),  # <--- CONEXIÓN REALIZADA
+            ("App2 (Carrera 🏁)", app2_comando),
             ("App3", lambda: accion_placeholder("App3"))
         ]
         self.crear_seccion(self, titulo="Aplicaciones", acciones=acciones_aplicaciones)
@@ -60,19 +57,21 @@ class PanelLateral(ttk.Frame):
         self.crear_seccion(self, titulo="Procesos batch", acciones=acciones_batch)
 
         # 5. Espacio expandible
+        # Ahora este marco se expandirá para ocupar todo el espacio restante.
         tk.Frame(self, height=1).pack(expand=True, fill="both")
 
-        # 6. Panel de Notas
-        self.crear_editor_res_notes()
+        # 6. Panel de Notas - ELIMINADO: Se moverá a la pestaña Tareas del Panel Central.
+        # self.crear_editor_res_notes() # <--- LÍNEA ELIMINADA
 
-    # --- NUEVO MÉTODO PARA MANEJAR LA CARRERA (App2) ---
+    # --- MÉTODOS DE LÓGICA / CONTROL ---
+
     def manejar_inicio_carrera_t2(self):
         """
         Llama al método 'manejar_inicio_carrera' del Panel Central.
         """
         if self.central_panel:
             print("Botón App2 presionado. Iniciando Carrera de Camellos en Panel Central...")
-            # Aquí es donde se llama a la función expuesta por PanelCentral
+            # Llamada a la función expuesta por PanelCentral
             self.central_panel.manejar_inicio_carrera()
 
             # Opcional: Cambiar automáticamente a la pestaña Resultados
@@ -84,7 +83,6 @@ class PanelLateral(ttk.Frame):
         else:
             messagebox.showerror("Error", "El Panel Central no está inicializado.")
 
-    # --- MÉTODOS EXISTENTES ---
     def manejar_navegacion(self, event=None):
         """
         Obtiene el texto de la entrada superior y llama a la función de navegación.
@@ -93,67 +91,10 @@ class PanelLateral(ttk.Frame):
         if navegar_a_url(url):
             self.entrada_superior.delete(0, tk.END)
 
-    def crear_editor_res_notes(self):
-        """Crea el editor de texto simple para el archivo res/notes."""
-
-        ttk.Label(self, text="Editor Simple (res/notes)", font=FUENTE_NEGOCIOS).pack(fill="x", pady=(10, 0),
-                                                                                     padx=5)
-
-        frame_editor = ttk.Frame(self, padding=5)
-        frame_editor.pack(fill="x", padx=5, pady=(0, 10))
-
-        # 1. Widget de texto
-        self.notes_text_editor = tk.Text(
-            frame_editor,
-            height=8,
-            width=self.ANCHO_CARACTERES_FIJO,
-            wrap="word",
-            bg=COLOR_BLANCO,
-            relief="solid",
-            borderwidth=1,
-            font=FUENTE_MONO
-        )
-        self.notes_text_editor.pack(fill="x", expand=False)
-
-        # 2. Botones de Cargar y Guardar
-        frame_botones = ttk.Frame(frame_editor)
-        frame_botones.pack(fill="x", pady=(5, 0))
-
-        ttk.Button(frame_botones, text="Guardar", command=self.guardar_res_notes, style='SmallAction.TButton').pack(
-            side=tk.RIGHT)
-        ttk.Button(frame_botones, text="Cargar", command=self.cargar_res_notes, style='SmallAction.TButton').pack(
-            side=tk.LEFT)
-
-        self.cargar_res_notes(initial_load=True)
-
-    def cargar_res_notes(self, initial_load=False):
-        """Carga el contenido de res/notes al editor de texto lateral."""
-        contenido = cargar_contenido_res_notes()
-
-        self.notes_text_editor.delete("1.0", tk.END)
-
-        if "Error al cargar:" in contenido:
-            self.notes_text_editor.insert(tk.END, contenido)
-        else:
-            if initial_load and not contenido.strip():
-                self.notes_text_editor.insert(tk.END, "# Escriba aquí sus notas (res/notes)")
-            else:
-                self.notes_text_editor.insert(tk.END, contenido)
-
-        print("Cargado 'res/notes' en el editor lateral.")
-
-    def guardar_res_notes(self):
-        """Guarda el contenido del editor de texto lateral en res/notes."""
-        contenido = self.notes_text_editor.get("1.0", tk.END)
-
-        success, message = guardar_contenido_res_notes(contenido)
-
-        if success:
-            messagebox.showinfo("✅ Guardado", "Notas guardadas exitosamente.")
-            print(message)
-        else:
-            messagebox.showerror("❌ Error al Guardar", message)
-            print(f"FALLO AL GUARDAR: {message}")
+    # --- MÉTODOS DE NOTAS ELIMINADOS (Se moverán a PanelCentral) ---
+    # def crear_editor_res_notes(self): ...
+    # def cargar_res_notes(self, initial_load=False): ...
+    # def guardar_res_notes(self): ...
 
     def manejar_extraccion_datos(self):
         """

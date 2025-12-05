@@ -3,13 +3,16 @@
 import random
 import tkinter as tk
 from tkinter import ttk
+from tkinter import messagebox
 import json
+from datetime import datetime
 import os
-import sys  # Necesario para el bloque opcional de VLC
+import sys
 
 # --- LÓGICA DE T1 (MONITOR DE RECURSOS) ---
 from logica.T1.trafficMeter import iniciar_monitor_red
 from logica.T1.graficos import crear_grafico_recursos, actualizar_historial_datos
+from logica.T1.textEditor import cargar_contenido_res_notes, guardar_contenido_res_notes  # <--- AÑADIDO
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
@@ -21,26 +24,28 @@ from logica.T2.carreraCamellos import (
 )
 
 # --- LÓGICA DE T3 (REPRODUCTOR DE MÚSICA) ---
-# Se necesita el bloque opcional aquí, ya que el import 'vlc' está en este módulo
+# Bloque para manejar la dependencia de VLC
 try:
     from logica.T2.musicReproductor import MusicReproductor
 except ImportError:
-    # Bloque OPCIONAL si falla el import de MusicReproductor por problemas de VLC en el entorno
-    print("⚠️ Error al importar MusicReproductor. Asegúrate de tener 'python-vlc' instalado y VLC en tu sistema.")
+    print("⚠️ Error al importar MusicReproductor. Usando simulador.")
 
 
     class MusicReproductor:
         def __init__(self, *args, **kwargs): pass
 
-        def ajustar_volumen(self, valor): print(f"Volumen (Simulado): {valor}")
+        def ajustar_volumen(self, valor): pass
 
-        def cargar_y_reproducir(self, url): print(f"Reproduciendo (Simulado): {url}")
+        def cargar_y_reproducir(self, url): print(f"🎶 SIMULANDO PLAY: {url}")
 
-        def reproducir(self): print("Reproducir (Simulado)")
+        def reproducir(self): pass
 
-        def pausar(self): print("Pausar (Simulado)")
+        def pausar(self, *args): pass
 
-        def detener(self): print("Detener (Simulado)")
+        def detener(self): pass
+
+# 🟢 LÓGICA DE T4 (ALARMAS)
+from logica.T2.alarm import AlarmManager
 
 # --- IMPORTACIÓN UNIVERSAL DE CONSTANTES ---
 from vista.config import *
@@ -48,12 +53,11 @@ from vista.config import *
 
 class PanelCentral(ttk.Frame):
     """Contiene el Notebook (subpestañas), el panel de Notas y el panel de Chat,
-    y gestiona directamente la lógica de control de T1, T2 y T3."""
+    y gestiona directamente la lógica de control de T1, T2, T3 y T4."""
 
     INTERVALO_ACTUALIZACION_MS = INTERVALO_RECURSOS_MS
     INTERVALO_CARRERA_MS = 200
 
-    # ✅ CORRECCIÓN DE RUTA
     NOMBRE_FICHERO_RADIOS = "res/radios.json"
 
     def __init__(self, parent, root, *args, **kwargs):
@@ -62,6 +66,9 @@ class PanelCentral(ttk.Frame):
 
         self.after_id = None
         self.after_carrera_id = None
+        self.after_alarm_id = None
+
+        # T2
         self.camellos = []
         self.progreso_labels = {}
         self.frame_carrera_controles = None
@@ -69,37 +76,56 @@ class PanelCentral(ttk.Frame):
         self.carrera_info_label = None
         self.carrera_estado_label = None
 
-        # 1. INICIALIZACIÓN DE VARIABLES (T1)
+        # T1
         self.net_monitor = iniciar_monitor_red()
         self.figure = Figure(figsize=(5, 4), dpi=100)
         self.canvas = None
 
-        # 2. INICIALIZACIÓN DE VARIABLES Y LÓGICA DE RADIO (T3)
+        # T3 (Radios)
         self.emisoras_cargadas = self.cargar_emisoras()
         self.radio_seleccionada = tk.StringVar(value="---")
         self.volumen_var = tk.DoubleVar(value=50.0)
         self.reproductor = MusicReproductor(initial_volume=self.volumen_var.get())
 
-        # 3. CONFIGURACIÓN DEL LAYOUT
+        # 🟢 T4 (Alarmas) - Inicialización de variables UI.
+        self.alarm_manager = None
+        self.alarm_list_frame = None
+        self.scrollable_frame = None
+        self.alarm_hours_entry = None
+        self.alarm_minutes_entry = None
+        self.alarm_seconds_entry = None
+
+        # 📄 Tareas (res/notes)
+        self.notes_text_editor = None  # <--- AÑADIDO
+
+        # 2. CONFIGURACIÓN DEL LAYOUT
         self.grid_columnconfigure(0, weight=3)
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
-        self.crear_area_principal_y_notas()
+        self.crear_area_principal()  # <--- FUNCIÓN SIMPLIFICADA
         self.crear_panel_chat_y_alumnos()
 
-        # 4. INICIO DE CICLOS DE ACTUALIZACIÓN
+        # Inicializar el AlarmManager solo después de que show_alarm_popup esté definido.
+        self.inicializar_alarmas()
+
+        # 3. INICIO DE CICLOS DE ACTUALIZACIÓN
         self.iniciar_actualizacion_automatica()
         self.iniciar_actualizacion_carrera()
+        self.iniciar_actualizacion_alarmas()
+
+    def inicializar_alarmas(self):
+        """Inicializa AlarmManager, pasándole el método de callback show_alarm_popup."""
+        self.alarm_manager = AlarmManager(self.root, self.show_alarm_popup)
 
     # -------------------------------------------------------------
     # 📻 LÓGICA Y VISTA DE T3 (REPRODUCTOR DE RADIOS)
+    # ... (El código de cargar_emisoras, crear_interfaz_radios, seleccionar_radio, controlar_reproduccion, cambiar_volumen no tiene cambios)
     # -------------------------------------------------------------
 
     def cargar_emisoras(self):
         """Carga la lista de emisoras desde el archivo radios.json."""
         try:
-            # ✅ La ruta ahora apunta correctamente al subdirectorio 'res'
             with open(self.NOMBRE_FICHERO_RADIOS, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except FileNotFoundError:
@@ -152,11 +178,9 @@ class PanelCentral(ttk.Frame):
             emisora = self.emisoras_cargadas[indice]
             url = emisora['url_stream']
 
-            # 1. Actualizar la interfaz
             self.radio_seleccionada.set(emisora['nombre'])
             self.url_seleccionada_label.config(text=url)
 
-            # 2. Llamar a la lógica del reproductor
             self.reproductor.cargar_y_reproducir(url)
 
     def controlar_reproduccion(self, accion):
@@ -168,43 +192,308 @@ class PanelCentral(ttk.Frame):
 
     def cambiar_volumen(self, valor):
         """
-        Llama al método de control de volumen del reproductor,
-        asegurando que el valor sea un entero para evitar saltos del Scale.
+        Ajusta el volumen, asegurando que el valor sea un entero para estabilizar el Scale.
         """
-        # ✅ CORRECCIÓN DE LA BARRA DE VOLUMEN
-        # 1. Convertir el valor de punto flotante a entero
         valor_entero = int(float(valor))
 
-        # 2. Actualizar la variable de control con el valor entero.
         self.volumen_var.set(valor_entero)
-
-        # 3. Llamar a la lógica del reproductor.
         self.reproductor.ajustar_volumen(valor_entero)
+
+    # -------------------------------------------------------------
+    # 🔔 LÓGICA Y VISTA DE T4 (ALARMAS / TEMPORIZADORES)
+    # -------------------------------------------------------------
+
+    def crear_interfaz_alarmas(self, parent_frame):
+        """Crea la interfaz para programar y visualizar alarmas (H:M:S)."""
+
+        frame = ttk.Frame(parent_frame, padding=10, style='TFrame')
+        frame.pack(expand=True, fill="both")
+
+        ttk.Label(frame, text="Programar Nuevo Temporizador (H:M:S)", font=FUENTE_NEGOCIOS).pack(pady=(0, 10))
+
+        # --- Controles de Nueva Alarma (H:M:S) ---
+        frame_input = ttk.Frame(frame, style='TFrame')
+        frame_input.pack(fill='x', pady=5)
+
+        # Horas
+        ttk.Label(frame_input, text="Horas:").pack(side='left', padx=(0, 2))
+        self.alarm_hours_entry = ttk.Entry(frame_input, width=3)
+        self.alarm_hours_entry.pack(side='left', padx=(0, 10))
+        self.alarm_hours_entry.insert(0, "0")
+
+        # Minutos
+        ttk.Label(frame_input, text="Minutos:").pack(side='left', padx=(0, 2))
+        self.alarm_minutes_entry = ttk.Entry(frame_input, width=3)
+        self.alarm_minutes_entry.pack(side='left', padx=(0, 10))
+        self.alarm_minutes_entry.insert(0, "1")
+
+        # Segundos
+        ttk.Label(frame_input, text="Segundos:").pack(side='left', padx=(0, 2))
+        self.alarm_seconds_entry = ttk.Entry(frame_input, width=3)
+        self.alarm_seconds_entry.pack(side='left', padx=(0, 15))
+        self.alarm_seconds_entry.insert(0, "0")
+
+        ttk.Button(frame_input, text="➕ Crear Alarma", command=self.manejar_nueva_alarma,
+                   style='Action.TButton').pack(side='left')
+
+        ttk.Separator(frame, orient='horizontal').pack(fill='x', pady=15)
+
+        # --- Listado de Alarmas Activas ---
+        ttk.Label(frame, text="Alarmas Activas (Tiempo Restante)", font=FUENTE_NEGOCIOS).pack(pady=(0, 5))
+
+        self.alarm_list_frame = ttk.Frame(frame)
+        self.alarm_list_frame.pack(fill="both", expand=True)
+
+        canvas = tk.Canvas(self.alarm_list_frame, borderwidth=0, background=COLOR_BLANCO)
+        vscroll = ttk.Scrollbar(self.alarm_list_frame, orient="vertical", command=canvas.yview)
+
+        self.scrollable_frame = ttk.Frame(canvas)
+
+        self.scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(
+                scrollregion=canvas.bbox("all")
+            )
+        )
+
+        canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=vscroll.set)
+
+        canvas.pack(side="left", fill="both", expand=True)
+        vscroll.pack(side="right", fill="y")
+
+    def manejar_nueva_alarma(self):
+        """Captura los datos del formulario (H:M:S), los convierte a segundos y llama al AlarmManager."""
+        try:
+            # 1. Leer los valores (usando 'or 0' para manejar campos vacíos como 0)
+            hours = int(self.alarm_hours_entry.get() or 0)
+            minutes = int(self.alarm_minutes_entry.get() or 0)
+            seconds = int(self.alarm_seconds_entry.get() or 0)
+
+            # 2. Calcular el total de segundos
+            total_seconds = (hours * 3600) + (minutes * 60) + seconds
+
+            if total_seconds <= 0:
+                print("⚠️ El tiempo de alarma debe ser un número positivo (H:M:S > 0).")
+                return
+
+            # 3. Llamar al AlarmManager con el total de segundos
+            self.alarm_manager.set_alarm(total_seconds)
+
+            # 4. Limpiar y preparar para la siguiente alarma (Default: 1 minuto)
+            self.alarm_hours_entry.delete(0, tk.END)
+            self.alarm_hours_entry.insert(0, "0")
+            self.alarm_minutes_entry.delete(0, tk.END)
+            self.alarm_minutes_entry.insert(0, "1")
+            self.alarm_seconds_entry.delete(0, tk.END)
+            self.alarm_seconds_entry.insert(0, "0")
+
+            self.actualizar_lista_alarmas()
+
+        except ValueError:
+            print("⚠️ Por favor, introduce números enteros válidos para el tiempo.")
+        except AttributeError:
+            print("⚠️ Error: AlarmManager no inicializado.")
+
+    def manejar_cancelar_alarma(self, alarm_id):
+        """Cancela la alarma usando su ID."""
+        if self.alarm_manager.cancel_alarm(alarm_id):
+            self.actualizar_lista_alarmas()
+
+    def actualizar_lista_alarmas(self):
+        """Actualiza la visualización de las alarmas activas con botones de cancelación individuales."""
+        if not self.scrollable_frame:
+            self.after_alarm_id = self.after(1000, self.actualizar_lista_alarmas)
+            return
+
+        for widget in self.scrollable_frame.winfo_children():
+            widget.destroy()
+
+        active_alarms = self.alarm_manager.get_active_alarms()
+
+        if not active_alarms:
+            ttk.Label(self.scrollable_frame, text="--- No hay alarmas activas ---", font=('Consolas', 10),
+                      foreground=COLOR_TEXTO).pack(padx=10, pady=10)
+
+        for alarm in active_alarms:
+            self.add_alarm_row(self.scrollable_frame, alarm)
+
+        self.after_alarm_id = self.after(1000, self.actualizar_lista_alarmas)
+
+    def add_alarm_row(self, parent, alarm_data):
+        """Añade una fila con la info de la alarma y su botón de cancelación."""
+        row_frame = ttk.Frame(parent, padding=5, style='Note.TFrame')
+        row_frame.pack(fill='x', padx=5, pady=2)
+
+        # Convertir total_seconds a formato Hh:Mm:Ss para la visualización del tiempo total
+        total_s = alarm_data['total_seconds']
+        h = total_s // 3600
+        m = (total_s % 3600) // 60
+        s = total_s % 60
+        total_time_str = f"{h:02d}h:{m:02d}m:{s:02d}s"
+
+        # Info de la alarma
+        info_text = (f"[ID{alarm_data['id']}] {alarm_data['restante']} -> {alarm_data['nombre']} "
+                     f"({total_time_str} total)")
+        ttk.Label(row_frame, text=info_text, font=('Consolas', 10), style='Note.TLabel').pack(side='left', fill='x',
+                                                                                              expand=True)
+
+        # Botón de Cancelación Individual
+        ttk.Button(row_frame, text="❌ Cancelar", style='Danger.TButton', width=10,
+                   command=lambda id=alarm_data['id']: self.manejar_cancelar_alarma(id)).pack(side='right')
+
+    def iniciar_actualizacion_alarmas(self):
+        """Inicia el ciclo de actualización de la lista de alarmas."""
+        if self.alarm_manager:
+            self.after_alarm_id = self.after(0, self.actualizar_lista_alarmas)
+
+    def detener_actualizacion_alarmas(self):
+        """Detiene el ciclo de actualización de la lista de alarmas."""
+        if hasattr(self, 'after_alarm_id') and self.after_alarm_id:
+            self.after_cancel(self.after_alarm_id)
+            self.after_alarm_id = None
+            print("Ciclo de actualización de alarmas detenido.")
+
+    # -------------------------------------------------------------
+    # 🔔 POPUP DE ALARMA (Notificación)
+    # -------------------------------------------------------------
+
+    def show_alarm_popup(self, alarm_name, alarm_id):
+        """Muestra una ventana Toplevel sin barra de título ni botón de cierre."""
+
+        # 1. Crear la ventana popup
+        popup = tk.Toplevel(self.root)
+        popup.title("🚨 ¡ALARMA!")
+        popup.geometry("350x150")
+        popup.resizable(False, False)
+
+        # ✅ Eliminar la barra de título y los botones (incluido el de cierre 'X')
+        popup.overrideredirect(True)
+
+        # Hacer que el popup sea modal (siempre encima)
+        popup.transient(self.root)
+        popup.grab_set()
+
+        # 2. Centrar la ventana
+        self.root.update_idletasks()
+        width = popup.winfo_width()
+        height = popup.winfo_height()
+        x = (self.root.winfo_screenwidth() // 2) - (width // 2)
+        y = (self.root.winfo_screenheight() // 2) - (height // 2)
+        popup.geometry(f'{width}x{height}+{x}+{y}')
+
+        # 3. Función para cerrar y detener la música
+        def close_and_stop(event=None):
+            """Función para cerrar el popup y detener el sonido."""
+            self.alarm_manager.stop_alarm_sound()
+            self.alarm_manager.cancel_alarm(alarm_id)
+            popup.destroy()
+            self.actualizar_lista_alarmas()
+
+        # 4. Contenido
+        frame = ttk.Frame(popup, padding=20, relief='solid', borderwidth=2)
+        frame.pack(expand=True, fill="both")
+
+        ttk.Label(frame, text="¡El Temporizador ha Terminado!", font=FUENTE_TITULO, foreground=COLOR_ACCION).pack(
+            pady=5)
+        ttk.Label(frame, text=f"Hora de Disparo: {alarm_name}", font=FUENTE_NEGOCIOS).pack(pady=5)
+        ttk.Label(frame, text="Haz clic para cerrar.", font=('Arial', 9, 'italic'), foreground=COLOR_TEXTO).pack(pady=0)
+
+        # 5. Configurar el cierre
+        # La forma de cerrar es mediante un clic en la ventana.
+        popup.bind("<Button-1>", close_and_stop)
+        frame.bind("<Button-1>", close_and_stop)
+
+        # 6. Esperar a que se cierre para continuar la ejecución del hilo principal de Tkinter
+        self.root.wait_window(popup)
+
+    # -------------------------------------------------------------
+    # 📄 LÓGICA Y VISTA DE TAREAS (Editor de Notas)
+    # -------------------------------------------------------------
+
+    def crear_interfaz_tareas(self, parent_frame):
+        """Crea el editor de texto simple para el archivo res/notes dentro de la pestaña Tareas."""
+
+        frame = ttk.Frame(parent_frame, padding=15, style='TFrame')
+        frame.pack(expand=True, fill="both")
+
+        ttk.Label(frame, text="Editor de Notas ", font=FUENTE_TITULO).pack(pady=(0, 10), anchor="w")
+        ttk.Label(frame, text="Use este panel para tomar notas rápidas sobre la ejecución de tareas.",
+                  font=FUENTE_NEGOCIOS).pack(pady=(0, 15), anchor="w")
+
+        # 1. Widget de texto
+        self.notes_text_editor = tk.Text(
+            frame,
+            height=20,
+            wrap="word",
+            bg=COLOR_BLANCO,
+            relief="solid",
+            borderwidth=1,
+            font=FUENTE_MONO
+        )
+        self.notes_text_editor.pack(fill="both", expand=True, pady=(0, 10))
+
+        # 2. Botones de Cargar y Guardar
+        frame_botones = ttk.Frame(frame)
+        frame_botones.pack(fill="x", pady=(5, 0))
+
+        ttk.Button(frame_botones, text="Guardar Cambios", command=self.guardar_res_notes, style='Action.TButton').pack(
+            side=tk.RIGHT)
+        ttk.Button(frame_botones, text="Cargar Archivo", command=self.cargar_res_notes, style='Action.TButton').pack(
+            side=tk.LEFT)
+
+        self.cargar_res_notes(initial_load=True)  # Carga inicial al crear la interfaz
+
+    def cargar_res_notes(self, initial_load=False):
+        """Carga el contenido de res/notes al editor de texto."""
+        if not self.notes_text_editor: return
+
+        contenido = cargar_contenido_res_notes()
+
+        self.notes_text_editor.delete("1.0", tk.END)
+
+        if "Error al cargar:" in contenido:
+            self.notes_text_editor.insert(tk.END, contenido)
+        else:
+            if initial_load and not contenido.strip():
+                self.notes_text_editor.insert(tk.END, "# Escriba aquí sus notas (res/notes)")
+            else:
+                self.notes_text_editor.insert(tk.END, contenido)
+
+        if initial_load:
+            print("Cargado 'res/notes' en la pestaña Tareas.")
+
+    def guardar_res_notes(self):
+        """Guarda el contenido del editor de texto en res/notes."""
+        if not self.notes_text_editor: return
+
+        contenido = self.notes_text_editor.get("1.0", tk.END)
+
+        success, message = guardar_contenido_res_notes(contenido)
+
+        if success:
+            messagebox.showinfo("✅ Guardado", "Notas guardadas exitosamente.")
+            print(message)
+        else:
+            messagebox.showerror("❌ Error al Guardar", message)
+            print(f"FALLO AL GUARDAR: {message}")
 
     # -------------------------------------------------------------
     # 📦 ESTRUCTURA PRINCIPAL DEL PANEL
     # -------------------------------------------------------------
 
-    def crear_area_principal_y_notas(self):
-        """Crea el contenedor de las subpestañas y el panel de notas."""
+    def crear_area_principal(self):
+        """Crea el contenedor de las subpestañas."""
         frame_izquierdo = ttk.Frame(self, style='TFrame')
         frame_izquierdo.grid(row=0, column=0, sticky="nsew")
 
-        frame_izquierdo.grid_rowconfigure(0, weight=4)
-        frame_izquierdo.grid_rowconfigure(1, weight=1)
+        frame_izquierdo.grid_rowconfigure(0, weight=1)
         frame_izquierdo.grid_columnconfigure(0, weight=1)
 
         self.crear_notebook_pestañas(frame_izquierdo)
 
-        panel_notas = ttk.Frame(frame_izquierdo, style='Note.TFrame')
-        panel_notas.grid(row=1, column=0, sticky="nsew", pady=(5, 0))
-
-        ttk.Label(panel_notas, text="Panel para notas informativas y mensajes sobre la ejecución de los hilos.",
-                  style='Note.TLabel', anchor="nw", justify=tk.LEFT, padding=10, font=FUENTE_NOTA).pack(
-            expand=True, fill="both")
-
     def crear_notebook_pestañas(self, parent_frame):
-        """Crea las pestañas internas para las tareas (T1, Carrera, Radios)."""
+        """Crea las pestañas internas para las tareas (T1, Carrera, Radios, Tareas, Alarmas, etc.)."""
         sub_notebook = ttk.Notebook(parent_frame)
         sub_notebook.grid(row=0, column=0, sticky="nsew")
 
@@ -230,8 +519,16 @@ class PanelCentral(ttk.Frame):
             elif sub_tab_text == "Radios":
                 self.crear_interfaz_radios(frame)
 
-    # -------------------------------------------------------------
+            elif sub_tab_text == "Tareas":
+                self.crear_interfaz_tareas(frame)  # <--- Llamada a la nueva interfaz
+
+            elif sub_tab_text == "Alarmas":
+                self.crear_interfaz_alarmas(frame)
+
+                # -------------------------------------------------------------
+
     # 🐪 LÓGICA DE T2 (CARRERA DE CAMELLOS)
+    # ... (El código de carreraCamellos no cambia)
     # -------------------------------------------------------------
 
     def crear_interfaz_carrera(self, parent_frame):
@@ -414,7 +711,7 @@ class PanelCentral(ttk.Frame):
         self.after_id = self.after(0, self.actualizar_recursos)
 
     def detener_actualizacion_automatica(self):
-        """Detiene el ciclo de actualización periódica y el hilo de red (T1) y T3."""
+        """Detiene el ciclo de actualización periódica y los hilos/tareas."""
         if self.after_id:
             self.after_cancel(self.after_id)
             self.after_id = None
@@ -426,8 +723,8 @@ class PanelCentral(ttk.Frame):
             print("Hilo de TrafficMeter detenido.")
 
         self.detener_actualizacion_carrera()
+        self.detener_actualizacion_alarmas()
 
-        # Detener el reproductor al cerrar la aplicación
         if self.reproductor:
             self.reproductor.detener()
 
@@ -471,7 +768,7 @@ class PanelCentral(ttk.Frame):
             ttk.Button(frame_alumno, text="↻", width=3, style='Action.TButton').grid(row=0, column=1, rowspan=2, padx=5,
                                                                                      sticky="ne")
 
-        # --- FILA 8: Reproductor Música ---
+        # --- FILA 8: Reproductor Música (T3) ---
         musica_frame = ttk.LabelFrame(panel_chat, text="Reproductor Música", padding=10, style='TFrame')
         musica_frame.grid(row=8, column=0, sticky="ew", pady=(15, 0))
 
@@ -499,5 +796,3 @@ class PanelCentral(ttk.Frame):
         ttk.Label(musica_frame, textvariable=self.volumen_var, style='TLabel').grid(row=2, column=2, sticky="w")
 
         musica_frame.grid_columnconfigure(1, weight=1)
-
-        panel_chat.grid_rowconfigure(8, weight=0)

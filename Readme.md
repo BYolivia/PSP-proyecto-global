@@ -9,9 +9,8 @@ python-vlc => pip install python-vlc
 
 bs4 => pip install bs4
 
-
-
 requests => pip install requests
+
 
 ## Como Ejecutar ##
 > [!NOTE]
@@ -46,6 +45,6 @@ python -m ProyectoGlobal
 
 4. ~~Scraping~~
 
-5. ~~Juego de los camellos~~ / autos de choque / etc. (aplicar resolución de sincronización para evitar problemas de interbloqueos)
+5. ~~Juego de los camellos / autos de choque / etc. (aplicar resolución de sincronización para evitar problemas de interbloqueos)~~
 
 6. ~~Música de fondo (reproducción de mp3 o midi)~~

@@ -14,8 +14,8 @@ from logica.T2.scraping import hacer_scraping
 from logica.T2.musicReproductor import MusicReproductor
 
 # --- Módulos de Vistas ---
-# ❌ Eliminamos: from vista.central_panel.view_radio import RadioPanel
-# 🔑 NUEVA IMPORTACIÓN DE VISTA MODULAR
+# 🔑 IMPORTACIÓN DE LA VENTANA SECUNDARIA DEL BUSCAMINAS
+from vista.ventana_buscaMinas import VentanaBuscaMinas
 from vista.reproductor_controller import ReproductorController
 from vista.config import *
 
@@ -37,8 +37,10 @@ class PanelLateral(ttk.Frame):
         self.controles_musica = None
         self.entrada_superior = None
 
+        # 🔑 REFERENCIA A LA VENTANA NO-MODAL DEL BUSCAMINAS
+        self.buscaminas_window = None
+
         # 🔑 INSTANCIA DE LÓGICA DE MÚSICA T2
-        # Inicializamos el objeto de la lógica de reproducción aquí
         self.music_reproductor = MusicReproductor()
 
         self.configurar_estilos_locales(root)
@@ -57,7 +59,7 @@ class PanelLateral(ttk.Frame):
         ttk.Separator(self, orient='horizontal').grid(row=4, column=0, sticky="ew", pady=(10, 0))
         tk.Frame(self, height=1).grid(row=99, column=0, sticky="nsew")
 
-        # 🔑 LLAMADA AL NUEVO CONTROLADOR
+        # 🔑 LLAMADA AL CONTROLADOR DE MÚSICA
         self.crear_controles_musica()  # Fila 100
 
     # -------------------------------------------------------------
@@ -88,8 +90,9 @@ class PanelLateral(ttk.Frame):
 
         acciones_aplicaciones = [
             ("Visual Code", abrir_vscode),
-            ("Carrera 🏁", app2_comando),
-            ("App3", lambda: accion_placeholder("App3"))
+            ("Carrera de Camellos 🏁", app2_comando),
+            # 🔑 VINCULACIÓN DEL BOTÓN APP3 CON LA FUNCIÓN DE LANZAMIENTO
+            ("Juego de Buscaminas 💣", self.manejar_app3)
         ]
         self._crear_bloque_botones(self, titulo="Aplicaciones", acciones=acciones_aplicaciones, grid_row=2)
 
@@ -150,10 +153,34 @@ class PanelLateral(ttk.Frame):
         Llama al método 'manejar_inicio_carrera' del Panel Central.
         """
         if self.panel_central:
-            print("Botón App2 presionado. Iniciando Carrera de Camellos en Panel Central...")
+            print("Botón Carrera presionado. Iniciando Carrera de Camellos en Panel Central...")
             self.panel_central.manejar_inicio_carrera()
         else:
             messagebox.showerror("Error", "El Panel Central no está inicializado.")
+
+    # 🔑 FUNCIÓN PARA LANZAR LA VENTANA SECUNDARIA NO-MODAL
+    def manejar_app3(self):
+        """
+        Lanza la ventana secundaria (Toplevel) del Buscaminas.
+        Asegura que solo haya una instancia abierta a la vez.
+        """
+
+        # 1. Verificar si la ventana ya existe y está abierta
+        if self.buscaminas_window and self.buscaminas_window.winfo_exists():
+            # Si existe, la traemos al frente y le damos foco
+            self.buscaminas_window.lift()
+            print("❌ La ventana Buscaminas ya está abierta. Trayendo al frente.")
+            return
+
+        # 2. Crear y guardar la referencia de la nueva ventana
+        try:
+            # Creamos la instancia Toplevel, pasando la ventana principal (root) como parent
+            self.buscaminas_window = VentanaBuscaMinas(self.root)
+            print("✅ Ventana Buscaminas lanzada.")
+
+        except Exception as e:
+            messagebox.showerror("Error de Aplicación", f"No se pudo iniciar el Buscaminas: {e}")
+            print(f"Error al iniciar Buscaminas: {e}")
 
     def manejar_navegacion(self, event=None):
         """
@@ -209,7 +236,10 @@ class PanelLateral(ttk.Frame):
             ttk.Label(frame_titulo, text=titulo, font=FUENTE_NEGOCIOS).pack(anchor="w", padx=5)
 
         for texto_boton, comando in acciones:
-            ttk.Button(frame_seccion, text=texto_boton, command=comando, style='Green.TButton').pack(fill="x", pady=5)
+            # 🔑 CORRECCIÓN FINAL: Todos los botones de acción usarán el estilo verde ('Green.TButton').
+            style_to_use = 'Green.TButton'
+
+            ttk.Button(frame_seccion, text=texto_boton, command=comando, style=style_to_use).pack(fill="x", pady=5)
 
     def set_panel_central_reference(self, panel_central_instance):
         """

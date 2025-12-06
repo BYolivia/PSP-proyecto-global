@@ -1,50 +1,130 @@
-## Requisitos ##
-tkinter => hay que instalar python3-tk
 
-matplotlib => pip install matplotlib 
+# 🚀 ProyectoGlobal: Aplicaciones Multi-Funcionales
 
-psutil => pip install psutil
+## 📄 Descripción del Proyecto
 
-python-vlc => pip install python-vlc
+**ProyectoGlobal** es una aplicación de escritorio desarrollada en Python que integra diversas funcionalidades clave relacionadas con el **multiproceso**, la **concurrencia (multihilo)** y la **interacción de sistemas (sockets/redes)**.
 
-bs4 => pip install bs4
+La aplicación sirve como un panel de control que permite al usuario gestionar procesos, visualizar recursos del sistema, ejecutar tareas de automatización, y acceder a mini-juegos y herramientas de scraping/reproducción multimedia.
 
-requests => pip install requests
+---
+
+## 🛠️ Requisitos e Instalación
+
+Para ejecutar la aplicación, debes tener **Python 3** instalado. A continuación se detallan los paquetes necesarios y su comando de instalación.
+
+### 📦 Dependencias de Python
+
+Se recomienda instalar las dependencias en un **entorno virtual** (`venv`).
+
+| **Paquete**              | **Instalación**                       | **Uso principal**                          |
+| ------------------------ | ------------------------------------- | ------------------------------------------ |
+| **tkinter**              | `sudo apt install python3-tk` (Linux) | Interfaz gráfica (GUI)                     |
+| **matplotlib**           | `pip install matplotlib`              | Gráficas de recursos del sistema           |
+| **psutil**               | `pip install psutil`                  | Monitorización del sistema (CPU, RAM, red) |
+| **python-vlc**           | `pip install python-vlc`              | Reproducción de audio/música               |
+| **beautifulsoup4** (bs4) | `pip install bs4`                     | Extracción de datos (Scraping)             |
+| **requests**             | `pip install requests`                | Solicitudes HTTP (para Scraping)           |
+
+### ⚙️ Como Ejecutar
+
+Una vez instaladas las dependencias, ejecuta la aplicación desde el directorio principal del proyecto (el directorio que contiene la carpeta `ProyectoGlobal`):
+
+Bash
 
 
-## Como Ejecutar ##
 > [!NOTE]
-> Desde la carpeta anterior
+> Asegúrate de ejecutar este comando desde la carpeta *padre* del módulo `ProyectoGlobal`.
+> 
 
-python -m ProyectoGlobal
+Bash
 
 
-## Primera evaluacio ##
+`python -m ProyectoGlobal`
 
-### T1. Multiprocesos ###
+o si es ejecutado desde el IDE pyCharm puede darle al boton de play <svg width="1em" height="1em" viewBox="0 0 16 16" fill="green" style="vertical-align: middle;">
+  <path d="M11.596 8.697l-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.803.803 0 0 1 0 1.393z"/>
+</svg> para ejecutar el proyecto habiendo seleccionado el archivo \_\_main\_\_.py
 
-1. ~~Lanzar aplicaciones externas con parámetros (por ejemplo navegadores externos con url)~~
 
-2. ~~Copias de seguridad realizadas con scripts powershell (.ps1)~~
+---
 
-3. ~~Ver los recursos del sistema (memoria, procesador, hilos, etc.) utilizando gráficas (matplotlib) gráficos de barras, de áreas, líneas, etc.~~
+## ✅ Funcionalidades Implementadas (Evaluaciones Anteriores)
 
-4. ~~Editor de texto (estilo notepad).~~
+### T1. Multiprocesos
 
-5. ~~Hilo que cuente en kilobytes el tráfico de entrada y de salida de nuestra conexión de red. psutil.net_io_counters()~~
+|**Estado**|**Característica**|
+|---|---|
+|**[x]**|Lanzamiento de **aplicaciones externas** con parámetros (ej. navegadores con URL).|
+|**[x]**|Implementación de **Copias de seguridad** mediante la ejecución de scripts Powershell (`.ps1`).|
+|**[x]**|Visualización de **recursos del sistema** (memoria, procesador, hilos) usando gráficas `matplotlib`.|
+|**[x]**|**Editor de texto** básico (estilo Notepad).|
+|**[x]**|Hilo concurrente para contar el **tráfico de red** (entrada/salida en KB) utilizando `psutil.net_io_counters()`.|
+|**[x]**|Apertura directa de **VS Code** desde la interfaz del programa.|
 
-6. ~~Abrir VScode desde el programa~~
+### T2. Multihilos (Concurrencia)
 
-### T2. Multihilos ###
+| **Estado** | **Característica**                                                                                                    |
+| ---------- | --------------------------------------------------------------------------------------------------------------------- |
+| **[x]**    | Visualización de **Fecha y Hora** del sistema.                                                                        |
+| **[x]**    | Obtención y visualización de la **Temperatura local**.                                                                |
+| **[x]**    | Sistema de **Alarma** programable (aviso visual y sonoro).                                                            |
+| **[x]**    | Funcionalidad de **Scraping** para extracción de datos web.                                                           |
+| **[x]**    | **Mini-juego** (Carrera de camellos / Buscaminas) aplicando resolución de sincronización (para evitar interbloqueos). |
+| **[x]**    | **Música de fondo** (reproducción de mp3 o midi) utilizando `python-vlc`.                                             |
 
-1. ~~Hora del sistema / Fecha del sistema~~
+---
 
-2. ~~Temperatura local~~ 
+## 📅 Hoja de Ruta (Próximas Evaluaciones)
 
-3. ~~Programar Alarma (aviso visual y sonoro al pasar X minutos)~~
+### T3. Sockets (Comunicación de Red Básica)
 
-4. ~~Scraping~~
+1. Implementación de un **Chat** simple.
+    
+2. Desarrollo de un **Servidor TCP** básico.
+    
+3. Desarrollo de un **Servidor UDP** básico.
+    
+4. Manejo de **Streams** de datos.
+    
+5. Uso de **Asyncio** para operaciones concurrentes en red.
+    
 
-5. ~~Juego de los camellos / autos de choque / etc. (aplicar resolución de sincronización para evitar problemas de interbloqueos)~~
+### T4. Servicios en Red (Aplicaciones Avanzadas)
 
-6. ~~Música de fondo (reproducción de mp3 o midi)~~
+1. **Cliente de Correo Electrónico** (usando POP3 y/o IMAP).
+    
+2. Implementación del protocolo **SMTP**.
+    
+3. **Cliente FTP** para transferencia de ficheros.
+    
+4. **Cliente HTTP** para peticiones web.
+    
+5. **Servidor de música / radio online**.
+    
+6. Juegos multijugador: **Adivina número** (cliente único/múltiple) y **Piedra, Papel o Tijera**.
+    
+7. Consumo de una **API REST** externa.
+    
+8. Implementación de **Servicios API REST** propios.
+    
+9. Desarrollo de **Microservicios**.
+    
+
+### T5. Seguridad
+
+1. Manejo de **Autenticación y Roles** de usuario.
+    
+2. Implementación de **Logs** de actividad.
+    
+3. Cálculo y verificación de **HASH** aplicado a ficheros.
+    
+4. Técnicas de **Cifrado**.
+    
+    - Algoritmos **DES** y **AES**.
+        
+    - Cifrado Simétrico y **RSA** (Cifrado Asimétrico).
+        
+5. Implementación de **Firma Digital**.
+    
+6. Configuración y uso de **SSL/TLS**.

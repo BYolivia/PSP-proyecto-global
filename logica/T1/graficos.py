@@ -15,8 +15,6 @@ def actualizar_historial_datos(net_in_kb, net_out_kb, cpu_percent, ram_percent):
     """
     Recopila los datos actuales de CPU, RAM y Red pasados como argumento a sus historiales.
     """
-    # 🎯 CORRECCIÓN: Los datos de CPU/RAM ahora vienen como argumentos, no se calculan aquí.
-
     # 1. Añadir CPU y gestionar la longitud
     historial_cpu.append(cpu_percent)
     if len(historial_cpu) > MAX_PUNTOS:
@@ -40,7 +38,7 @@ def crear_grafico_recursos(figure):
     """
     Crea o actualiza un gráfico que muestre la evolución de CPU, RAM y Red.
     """
-    # Limpiar la figura antes de dibujar
+    # Limpiar la figura antes de dibujar (CRUCIAL para redibujo)
     figure.clear()
 
     # Configuramos el fondo de la figura para que coincida con el estilo de la aplicación
@@ -50,7 +48,7 @@ def crear_grafico_recursos(figure):
     # 3 filas para CPU, RAM, Red con espaciado vertical
     gs = figure.add_gridspec(3, 1, hspace=0.6, top=0.95, bottom=0.05, left=0.1, right=0.95)
 
-    # --- Función Helper para el estilo btop ---
+    # --- Función Helper para el estilo ---
     def configurar_ejes_historial(ax, title, color, data, y_limit=100, y_ticks=None):
         ax.set_facecolor('#f0f0f0')  # Fondo del área de dibujo
         ax.set_title(title, fontsize=9, loc='left', pad=10)

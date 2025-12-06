@@ -5,51 +5,38 @@ from tkinter import ttk
 import json
 from vista.config import *
 
-# Bloque para manejar la dependencia de VLC
-try:
-    from logica.T2.musicReproductor import MusicReproductor
-except ImportError:
-    print("⚠️ Error al importar MusicReproductor. Usando simulador.")
-
-
-    # CLASE SIMULADA
-    class MusicReproductor:
-        def __init__(self, *args, **kwargs): pass
-
-        def ajustar_volumen(self, valor): print(f"🎶 SIMULANDO VOLUMEN: {valor}")
-
-        def cargar_y_reproducir(self, url): print(f"🎶 SIMULANDO PLAY: {url}")
-
-        def reproducir(self): print("🎶 SIMULANDO PLAY")
-
-        def pausar(self, *args): print("🎶 SIMULANDO PAUSA")
-
-        def detener(self): print("🎶 SIMULANDO DETENER")
+# -------------------------------------------------------------
+# ❌ ELIMINAMOS EL BLOQUE try/except CON LA SIMULACIÓN DE VLC
+#    Ya que esta clase no debe interactuar directamente con MusicReproductor.
+# -------------------------------------------------------------
 
 
 class RadioPanel(ttk.Frame):
     """
     Panel de la pestaña Radios (T3).
-    Gestiona la selección de emisoras y los controles de reproducción.
+    Gestiona únicamente la selección de emisoras y DELEGA la reproducción
+    al ReproductorController en el Panel Lateral.
     """
 
     NOMBRE_FICHERO_RADIOS = "res/radios.json"
 
-    def __init__(self, parent_notebook, root, *args, **kwargs):
+    def __init__(self, parent_notebook, root, reproductor_controller_instance=None, *args, **kwargs):
         super().__init__(parent_notebook, *args, **kwargs)
         self.root = root
 
+        # 🔑 REFERENCIA AL CONTROLADOR DE AUDIO DEL PANEL LATERAL
+        # Este controlador tiene los métodos cargar_stream() y manejar_stop().
+        self.reproductor_controller = reproductor_controller_instance
+
         self.emisoras_cargadas = self.cargar_emisoras()
         self.radio_seleccionada = tk.StringVar(value="---")
-        self.volumen_var = tk.DoubleVar(value=50.0)
 
-        # Inicialización de la lógica del reproductor
-        self.reproductor = MusicReproductor(initial_volume=self.volumen_var.get())
+        # ❌ Se eliminaron: self.volumen_var y la inicialización de MusicReproductor.
 
         self.crear_interfaz_radios(self)
 
     # -------------------------------------------------------------
-    # 📻 VISTA Y LÓGICA DE RADIO
+    # 📻 LÓGICA DE DATOS
     # -------------------------------------------------------------
 
     def cargar_emisoras(self):
@@ -64,8 +51,12 @@ class RadioPanel(ttk.Frame):
             print(f"⚠️ Error al leer el archivo {self.NOMBRE_FICHERO_RADIOS}. Está mal formado.")
             return []
 
+    # -------------------------------------------------------------
+    # 🖼️ VISTA (SOLO SELECCIONADOR)
+    # -------------------------------------------------------------
+
     def crear_interfaz_radios(self, parent_frame):
-        """Crea la interfaz para seleccionar la emisora de radio."""
+        """Crea la interfaz para seleccionar la emisora de radio (SIN CONTROLES DE AUDIO)."""
 
         frame_radio = ttk.Frame(parent_frame, padding=10, style='TFrame')
         frame_radio.pack(expand=True, fill="both")
@@ -99,25 +90,16 @@ class RadioPanel(ttk.Frame):
         self.url_seleccionada_label = ttk.Label(frame_radio, text="N/A", wraplength=400, foreground=COLOR_TEXTO)
         self.url_seleccionada_label.pack(anchor="w")
 
-        # Controles de Volumen y Play/Pause
-        frame_controles = ttk.Frame(frame_radio, padding=5)
-        frame_controles.pack(fill="x", pady=10)
+        # ❌ Se eliminaron los controles de volumen y Play/Pause/Stop.
 
-        ttk.Button(frame_controles, text="▶️ Play", command=lambda: self.controlar_reproduccion('play'),
-                   style='Action.TButton').pack(side='left', padx=5)
-        ttk.Button(frame_controles, text="⏸️ Pause", command=lambda: self.controlar_reproduccion('pause'),
-                   style='Action.TButton').pack(side='left', padx=5)
-
-        ttk.Label(frame_controles, textvariable=self.radio_seleccionada, font=FUENTE_NEGOCIOS).pack(side='left',
-                                                                                                    padx=15)
-
-        ttk.Label(frame_controles, text="Volumen:").pack(side='right', padx=5)
-        volumen_slider = ttk.Scale(frame_controles, from_=0, to=100, orient=tk.HORIZONTAL,
-                                   variable=self.volumen_var, command=self.cambiar_volumen, length=100)
-        volumen_slider.pack(side='right', padx=5)
+    # -------------------------------------------------------------
+    # ⏯️ DELEGACIÓN DE LA LÓGICA DE AUDIO
+    # -------------------------------------------------------------
 
     def seleccionar_radio(self, listbox):
-        """Captura la selección y llama al reproductor para iniciar la reproducción."""
+        """
+        Captura la selección y DELEGA la reproducción al ReproductorController.
+        """
         seleccion = listbox.curselection()
         if seleccion:
             indice = seleccion[0]
@@ -126,22 +108,21 @@ class RadioPanel(ttk.Frame):
 
             self.radio_seleccionada.set(emisora['nombre'])
             self.url_seleccionada_label.config(text=url)
-            self.reproductor.cargar_y_reproducir(url)
 
-    def controlar_reproduccion(self, accion):
-        """Llama al método de control del reproductor (play/pause)."""
-        if accion == 'play':
-            self.reproductor.reproducir()
-        elif accion == 'pause':
-            self.reproductor.pausar()
+            # 🔑 DELEGACIÓN: Llamamos al controlador de audio del Panel Lateral
+            if self.reproductor_controller:
+                self.reproductor_controller.cargar_stream(url)
+            else:
+                # El error indica que falta conectar en panel_central.py
+                print("❌ Error: ReproductorController no está asignado.")
 
-    def cambiar_volumen(self, valor):
-        """Ajusta el volumen."""
-        valor_entero = int(float(valor))
-        self.volumen_var.set(valor_entero)
-        self.reproductor.ajustar_volumen(valor_entero)
+    # ❌ Se eliminaron los métodos controlar_reproduccion, cambiar_volumen.
 
     def detener_actualizacion(self):
-        """Método llamado por PanelCentral al cerrar la aplicación."""
-        if self.reproductor:
-            self.reproductor.detener()
+        """Método llamado por PanelCentral al cerrar la aplicación (solo delega la detención)."""
+        # 🔑 DELEGACIÓN: El PanelCentral llama a esto al cerrar.
+        if self.reproductor_controller:
+            self.reproductor_controller.manejar_stop()
+        else:
+            # Si el controlador no existe, no hacemos nada, pero el PanelLateral debería manejar su propio cierre.
+            pass

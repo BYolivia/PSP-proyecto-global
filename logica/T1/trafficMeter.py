@@ -21,24 +21,30 @@ class NetIOMonitor(threading.Thread):
 
         # Almacenamiento seguro para los últimos datos de tráfico
         self.lock = threading.Lock()
-        self.data_in_kb = 0.0  # Tráfico de entrada en KB/s (Recibido)
-        self.data_out_kb = 0.0  # Tráfico de salida en KB/s (Enviado)
-        self.cpu_percent = 0.0  # Nuevo
-        self.ram_percent = 0.0  # Nuevo
+        self.data_in_kb = 0.0
+        self.data_out_kb = 0.0
+        self.cpu_percent = 0.0
+        self.ram_percent = 0.0
 
         # Almacena el contador anterior para calcular la diferencia (tasa)
         self.last_counters = psutil.net_io_counters()
 
-        # Necesario para inicializar la medición de CPU/RAM al inicio
+        # Inicializar la medición de CPU (sin intervalo) para la primera lectura.
+        # Esto 'primea' el cálculo de psutil para la primera vez que se llama en run().
         psutil.cpu_percent(interval=None)
 
     def run(self):
         """Método principal del hilo."""
         try:
+            # Esperar el intervalo antes de la primera lectura para tener una base
+            # y que el cálculo de la tasa sea correcto desde el inicio.
+            time.sleep(self.intervalo)
+
             while not self._stop_event.is_set():
-                # Esperar el intervalo antes de la lectura para calcular la tasa
-                time.sleep(self.intervalo)
                 self._actualizar_datos()
+                # Pausa al final, simplifica la lógica de _actualizar_datos
+                time.sleep(self.intervalo)
+
         except Exception as e:
             print(f"Error fatal en el hilo NetIOMonitor: {e}")
             self._stop_event.set()
@@ -52,8 +58,9 @@ class NetIOMonitor(threading.Thread):
 
         current_counters = psutil.net_io_counters()
 
-        # Medición de CPU y RAM (usando interval=0.0 ya que el sleep garantiza el intervalo)
-        current_cpu = psutil.cpu_percent(interval=0.0)
+        # 🎯 CORRECCIÓN: Llamar sin intervalo. psutil.cpu_percent() devolverá el uso
+        # desde la última llamada (que fue hace 'self.intervalo' segundos).
+        current_cpu = psutil.cpu_percent()
         current_ram = psutil.virtual_memory().percent
 
         # Calcular la diferencia de bytes recibidos y enviados desde la última lectura

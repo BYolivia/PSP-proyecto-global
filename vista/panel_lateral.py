@@ -5,16 +5,18 @@ from tkinter import ttk
 from tkinter import messagebox
 
 # --- Módulos de Lógica Existente ---
-# Asumiendo que estos módulos existen en la estructura lógica del proyecto
 from logica.controlador import accion_placeholder
 from logica.T1.backup import accion_backup_t1
 from logica.T1.runVScode import abrir_vscode
 from logica.T1.openBrowser import navegar_a_url
 from logica.T2.scraping import hacer_scraping
+# 🔑 NUEVA IMPORTACIÓN DE LÓGICA T2
+from logica.T2.musicReproductor import MusicReproductor
 
 # --- Módulos de Vistas ---
-# Importamos la clase RadioPanel, que contiene los controles de música (Play/Pause y Volumen).
-from vista.central_panel.view_radio import RadioPanel
+# ❌ Eliminamos: from vista.central_panel.view_radio import RadioPanel
+# 🔑 NUEVA IMPORTACIÓN DE VISTA MODULAR
+from vista.reproductor_controller import ReproductorController
 from vista.config import *
 
 
@@ -33,8 +35,11 @@ class PanelLateral(ttk.Frame):
         self.root = root
         self.panel_central = panel_central
         self.controles_musica = None
-
         self.entrada_superior = None
+
+        # 🔑 INSTANCIA DE LÓGICA DE MÚSICA T2
+        # Inicializamos el objeto de la lógica de reproducción aquí
+        self.music_reproductor = MusicReproductor()
 
         self.configurar_estilos_locales(root)
 
@@ -52,6 +57,7 @@ class PanelLateral(ttk.Frame):
         ttk.Separator(self, orient='horizontal').grid(row=4, column=0, sticky="ew", pady=(10, 0))
         tk.Frame(self, height=1).grid(row=99, column=0, sticky="nsew")
 
+        # 🔑 LLAMADA AL NUEVO CONTROLADOR
         self.crear_controles_musica()  # Fila 100
 
     # -------------------------------------------------------------
@@ -82,7 +88,7 @@ class PanelLateral(ttk.Frame):
 
         acciones_aplicaciones = [
             ("Visual Code", abrir_vscode),
-            ("App2 (Carrera 🏁)", app2_comando),
+            ("Carrera 🏁", app2_comando),
             ("App3", lambda: accion_placeholder("App3"))
         ]
         self._crear_bloque_botones(self, titulo="Aplicaciones", acciones=acciones_aplicaciones, grid_row=2)
@@ -95,13 +101,17 @@ class PanelLateral(ttk.Frame):
         self._crear_bloque_botones(self, titulo="Procesos batch", acciones=acciones_batch, grid_row=3)
 
     def crear_controles_musica(self):
-        """Crea el área para alojar los controles de música/radio."""
+        """Crea el área para alojar los controles de música/radio usando el nuevo controlador."""
         frame_musica = ttk.Frame(self, style='TFrame', padding="15 10")
         frame_musica.grid(row=100, column=0, sticky="ew")
         frame_musica.grid_columnconfigure(0, weight=1)
 
-        # Instancia la clase RadioPanel, que ahora contiene solo Play/Pause y Volumen
-        self.controles_musica = RadioPanel(frame_musica, self.root)
+        # 🔑 REEMPLAZO CLAVE: Usamos ReproductorController y le pasamos la instancia de la lógica.
+        self.controles_musica = ReproductorController(
+            frame_musica,
+            self.root,
+            music_reproductor_instance=self.music_reproductor  # Pasamos la instancia de la lógica T2
+        )
         self.controles_musica.grid(row=0, column=0, sticky="nsew")
 
         frame_musica.grid_rowconfigure(0, weight=1)
@@ -200,3 +210,11 @@ class PanelLateral(ttk.Frame):
 
         for texto_boton, comando in acciones:
             ttk.Button(frame_seccion, text=texto_boton, command=comando, style='Green.TButton').pack(fill="x", pady=5)
+
+    def set_panel_central_reference(self, panel_central_instance):
+        """
+        Asigna la referencia al PanelCentral una vez que ambos paneles han sido inicializados.
+        Esto resuelve la dependencia circular.
+        """
+        self.panel_central = panel_central_instance
+        print("✅ [PanelLateral] Referencia a Panel Central establecida.")

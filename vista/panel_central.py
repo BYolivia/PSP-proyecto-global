@@ -5,6 +5,7 @@ from tkinter import ttk
 from tkinter import messagebox
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
+import psutil  # <--- IMPORTACIÓN REQUERIDA PARA CPU/RAM
 
 # --- LÓGICA DE CONTROL UNIVERSAL ---
 from logica.T1.trafficMeter import iniciar_monitor_red
@@ -34,9 +35,12 @@ class PanelCentral(ttk.Frame):
 
     INTERVALO_ACTUALIZACION_MS = INTERVALO_RECURSOS_MS
 
-    def __init__(self, parent, root, *args, **kwargs):
+    # 🔑 CORRECCIÓN CRUCIAL: Añadir 'panel_lateral' al constructor para acceder al controlador de música.
+    def __init__(self, parent, root, panel_lateral, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
         self.root = root
+        # 🔑 Guardamos la referencia para poder acceder al ReproductorController
+        self.panel_lateral = panel_lateral
 
         # --- Variables de Estado y Lógica Central ---
         self.after_id = None
@@ -56,12 +60,10 @@ class PanelCentral(ttk.Frame):
         self.modulos = {}
 
         # Configuración de Layout Principal
-        # 🎯 CORRECCIÓN 1: Se elimina la columna 1. La columna 0 ocupa todo el espacio.
-        self.grid_columnconfigure(0, weight=1)  # La Columna de Pestañas ahora es la única y principal
+        self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
         self.crear_area_principal()
-        # ❌ Se elimina la llamada a self.crear_panel_chat_y_alumnos()
 
     # 📦 ESTRUCTURA PRINCIPAL Y CREACIÓN DE PESTAÑAS
     # -------------------------------------------------------------
@@ -69,7 +71,7 @@ class PanelCentral(ttk.Frame):
     def crear_area_principal(self):
         """Crea el contenedor de las subpestañas (Notebook), columna izquierda (0)."""
         frame_izquierdo = ttk.Frame(self, style='TFrame')
-        frame_izquierdo.grid(row=0, column=0, sticky="nsew")  # Ocupa toda la ventana
+        frame_izquierdo.grid(row=0, column=0, sticky="nsew")
 
         frame_izquierdo.grid_rowconfigure(0, weight=1)
         frame_izquierdo.grid_columnconfigure(0, weight=1)
@@ -121,6 +123,14 @@ class PanelCentral(ttk.Frame):
 
                 elif sub_tab_text == "Alarmas":
                     vista_instancia = AlarmaPanel(frame, self.root, self.alarm_manager)
+                    self.modulos[sub_tab_text] = vista_instancia
+
+                # 🔑 CORRECCIÓN CLAVE: Inyectar la dependencia del controlador de música en RadioPanel
+                elif sub_tab_text == "Radios":
+                    # Accedemos al controlador de música a través de la referencia al PanelLateral
+                    reproductor_controller = getattr(self.panel_lateral, 'controles_musica', None)
+                    vista_instancia = RadioPanel(frame, self.root,
+                                                 reproductor_controller_instance=reproductor_controller)
                     self.modulos[sub_tab_text] = vista_instancia
 
                 else:
@@ -197,22 +207,29 @@ class PanelCentral(ttk.Frame):
     def actualizar_recursos(self):
         """Obtiene los datos del sistema y delega el dibujo al módulo RecursosPanel."""
         try:
-            if self.net_monitor is None:
-                raise Exception("TrafficMeter no inicializado.")
+            if 'Recursos' not in self.modulos or self.net_monitor is None:
+                # Si el módulo Recursos o el monitor no están listos, reprogramamos.
+                self.after_id = self.after(self.INTERVALO_ACTUALIZACION_MS, self.actualizar_recursos)
+                return
 
+            # 1. OBTENER DATOS (Red, CPU y RAM)
+            # 🔑 CORRECCIÓN CLAVE: Desempaquetar los 4 valores devueltos por TrafficMeter.
             net_in, net_out, cpu_percent, ram_percent = self.net_monitor.get_io_data_kb()
 
-            if 'Recursos' in self.modulos:
-                self.modulos['Recursos'].actualizar_datos(net_in, net_out, cpu_percent, ram_percent)
-                self.modulos['Recursos'].dibujar_grafico()
+            # 2. ACTUALIZAR Y DIBUJAR
+            recursos_panel = self.modulos['Recursos']
 
-                if self.canvas:
-                    self.canvas.draw()
+            # Llama a actualizar_datos en la lógica de graficos.py
+            recursos_panel.actualizar_datos(net_in, net_out, cpu_percent, ram_percent)
+
+            # Llama a dibujar_grafico en la vista (que ahora incluye self.canvas.draw())
+            recursos_panel.dibujar_grafico()
 
         except Exception as e:
+            # Captura y muestra el error, pero no detiene la tarea
             print(f"Error en la actualización de recursos T1: {e}")
-            pass
 
+        # 3. REPROGRAMAR TAREA (Crucial para el bucle)
         self.after_id = self.after(self.INTERVALO_ACTUALIZACION_MS, self.actualizar_recursos)
 
     def iniciar_actualizacion_automatica(self):
@@ -230,6 +247,12 @@ class PanelCentral(ttk.Frame):
                 return
 
         print("Iniciando actualización automática de recursos.")
+
+        # 🔑 CORRECCIÓN: Realizar una llamada inicial a psutil.cpu_percent()
+        # para establecer el punto de partida del intervalo de medición en el hilo principal.
+        psutil.cpu_percent(interval=None)
+
+        # Iniciar el ciclo de actualización.
         self.after_id = self.after(0, self.actualizar_recursos)
 
     def detener_actualizacion_automatica(self):
@@ -248,4 +271,3 @@ class PanelCentral(ttk.Frame):
         for nombre, modulo in self.modulos.items():
             if hasattr(modulo, 'detener_actualizacion'):
                 modulo.detener_actualizacion()
-

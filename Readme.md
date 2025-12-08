@@ -11,6 +11,7 @@
   - [T3. Sockets (Comunicación de Red Básica)](#t3-sockets-comunicación-de-red-básica)
   - [T4. Servicios en Red (Aplicaciones Avanzadas)](#t4-servicios-en-red-aplicaciones-avanzadas)
   - [T5. Seguridad](#t5-seguridad)
+
 ## 📄 Descripción del Proyecto
 
 **ProyectoGlobal** es una aplicación de escritorio desarrollada en Python que integra diversas funcionalidades clave relacionadas con el **multiproceso**, la **concurrencia (multihilo)** y la **interacción de sistemas (sockets/redes)**.
@@ -59,6 +60,8 @@ o si es ejecutado desde el IDE pyCharm puede darle al boton de play <svg width="
 ## ✅ Funcionalidades Implementadas (Evaluaciones Anteriores)
 
 ### T1. Multiprocesos
+
+[Video de la demostracion](https://youtu.be/37-wJIXNZAg)
 
 | **Estado** | **Característica**                                                                                               |
 |------------|------------------------------------------------------------------------------------------------------------------|

@@ -23,7 +23,7 @@ class MusicReproductor:
     Gestiona la reproducción de streams de radio usando la librería python-vlc.
     """
 
-    def __init__(self, initial_volume=50.0):
+    def __init__(self, initial_volume=50):
         """Inicializa la instancia de VLC y el reproductor."""
 
         # Instancia de VLC y objeto Reproductor

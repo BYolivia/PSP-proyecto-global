@@ -1,6 +1,16 @@
 
 # 🚀 ProyectoGlobal: Aplicaciones Multi-Funcionales
 
+## Indice ##
+- [📄 Descripción del Proyecto](#-descripción-del-proyecto)
+- [🛠️ Requisitos e Instalación](#-requisitos-e-instalación)
+- [✅ Funcionalidades Implementadas (Evaluaciones Anteriores)](#-funcionalidades-implementadas-evaluaciones-anteriores)
+  - [T1. Multiprocesos](#t1-multiprocesos)
+  - [T2. Multihilos (Concurrencia)](#t2-multihilos-concurrencia)
+- [📅 Hoja de Ruta (Próximas Evaluaciones)](#-hoja-de-ruta-próximas-evaluaciones)
+  - [T3. Sockets (Comunicación de Red Básica)](#t3-sockets-comunicación-de-red-básica)
+  - [T4. Servicios en Red (Aplicaciones Avanzadas)](#t4-servicios-en-red-aplicaciones-avanzadas)
+  - [T5. Seguridad](#t5-seguridad)
 ## 📄 Descripción del Proyecto
 
 **ProyectoGlobal** es una aplicación de escritorio desarrollada en Python que integra diversas funcionalidades clave relacionadas con el **multiproceso**, la **concurrencia (multihilo)** y la **interacción de sistemas (sockets/redes)**.
@@ -34,13 +44,10 @@ Bash
 
 
 > [!NOTE]
-> Asegúrate de ejecutar este comando desde la carpeta *padre* del módulo `ProyectoGlobal`.
-> 
-
-Bash
+> Asegúrate de ejecutar este comando desde la carpeta del proyecto tras haber instalado las dependencias.
 
 
-`python -m ProyectoGlobal`
+Bash `python3 __main__.py`
 
 o si es ejecutado desde el IDE pyCharm puede darle al boton de play <svg width="1em" height="1em" viewBox="0 0 16 16" fill="green" style="vertical-align: middle;">
   <path d="M11.596 8.697l-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.803.803 0 0 1 0 1.393z"/>
@@ -53,25 +60,25 @@ o si es ejecutado desde el IDE pyCharm puede darle al boton de play <svg width="
 
 ### T1. Multiprocesos
 
-|**Estado**|**Característica**|
-|---|---|
-|**[x]**|Lanzamiento de **aplicaciones externas** con parámetros (ej. navegadores con URL).|
-|**[x]**|Implementación de **Copias de seguridad** mediante la ejecución de scripts Powershell (`.ps1`).|
-|**[x]**|Visualización de **recursos del sistema** (memoria, procesador, hilos) usando gráficas `matplotlib`.|
-|**[x]**|**Editor de texto** básico (estilo Notepad).|
-|**[x]**|Hilo concurrente para contar el **tráfico de red** (entrada/salida en KB) utilizando `psutil.net_io_counters()`.|
-|**[x]**|Apertura directa de **VS Code** desde la interfaz del programa.|
+| **Estado** | **Característica**                                                                                               |
+|------------|------------------------------------------------------------------------------------------------------------------|
+| **Done**   | Lanzamiento de **aplicaciones externas** con parámetros (ej. navegadores con URL).                               |
+| **Done**   | Implementación de **Copias de seguridad** mediante la ejecución de scripts Powershell (`.ps1`).                  |
+| **Done**   | Visualización de **recursos del sistema** (memoria, procesador, hilos) usando gráficas `matplotlib`.             |
+| **Done**   | **Editor de texto** básico (estilo Notepad).                                                                     |
+| **Done**   | Hilo concurrente para contar el **tráfico de red** (entrada/salida en KB) utilizando `psutil.net_io_counters()`. |
+| **Done**   | Apertura directa de **VS Code** desde la interfaz del programa.                                                  |
 
 ### T2. Multihilos (Concurrencia)
 
 | **Estado** | **Característica**                                                                                                    |
-| ---------- | --------------------------------------------------------------------------------------------------------------------- |
-| **[x]**    | Visualización de **Fecha y Hora** del sistema.                                                                        |
-| **[x]**    | Obtención y visualización de la **Temperatura local**.                                                                |
-| **[x]**    | Sistema de **Alarma** programable (aviso visual y sonoro).                                                            |
-| **[x]**    | Funcionalidad de **Scraping** para extracción de datos web.                                                           |
-| **[x]**    | **Mini-juego** (Carrera de camellos / Buscaminas) aplicando resolución de sincronización (para evitar interbloqueos). |
-| **[x]**    | **Música de fondo** (reproducción de mp3 o midi) utilizando `python-vlc`.                                             |
+|------------|-----------------------------------------------------------------------------------------------------------------------|
+| **Done**   | Visualización de **Fecha y Hora** del sistema.                                                                        |
+| **Done**   | Obtención y visualización de la **Temperatura local**.                                                                |
+| **Done**   | Sistema de **Alarma** programable (aviso visual y sonoro).                                                            |
+| **Done**   | Funcionalidad de **Scraping** para extracción de datos web.                                                           |
+| **Done**   | **Mini-juego** (Carrera de camellos / Buscaminas) aplicando resolución de sincronización (para evitar interbloqueos). |
+| **Done**   | **Música de fondo** (reproducción de mp3 o midi) utilizando `python-vlc`.                                             |
 
 ---
 

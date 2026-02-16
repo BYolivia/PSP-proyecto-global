@@ -1,4 +1,4 @@
-
+m
 # 🚀 ProyectoGlobal: Aplicaciones Multi-Funcionales
 
 ## Indice ##
@@ -22,7 +22,13 @@ La aplicación sirve como un panel de control que permite al usuario gestionar p
 
 ## 🛠️ Requisitos e Instalación
 
-Para ejecutar la aplicación, debes tener **Python 3** instalado. A continuación se detallan los paquetes necesarios y su comando de instalación.
+Para ejecutar la aplicación, debes tener **Python 3** instalado y ejecutar en terminal para activar el entorno virtual
+
+```bash 
+source venv/bin/activate
+```
+
+A continuación se detallan los paquetes necesarios y su comando de instalación.
 
 ### 📦 Dependencias de Python
 
@@ -37,6 +43,7 @@ Se recomienda instalar las dependencias en un **entorno virtual** (`venv`).
 | **beautifulsoup4** (bs4) | `pip install bs4`                     | Extracción de datos (Scraping)             |
 | **requests**             | `pip install requests`                | Solicitudes HTTP (para Scraping)           |
 
+### Se recomienda usar el **install.sh** para hacer la instalación automática de las dependencias.
 ### ⚙️ Como Ejecutar
 
 Una vez instaladas las dependencias, ejecuta la aplicación desde el directorio principal del proyecto (el directorio que contiene la carpeta `ProyectoGlobal`):
@@ -138,3 +145,17 @@ o si es ejecutado desde el IDE pyCharm puede darle al boton de play <svg width="
 5. Implementación de **Firma Digital**.
     
 6. Configuración y uso de **SSL/TLS**.
+
+
+
+
+
+servidor de correo:
+IP del servidor: 10.10.0.101
+
+servidor de correoc webmail port(no poner '_'): 20_000
+
+
+
+Mi correo: josep@psp.es
+contraseña: 1234

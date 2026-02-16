@@ -18,7 +18,7 @@ from vista.central_panel.view_radio import RadioPanel
 from vista.central_panel.view_alarmas import AlarmaPanel
 from vista.central_panel.view_notas import NotasPanel
 from vista.central_panel.view_scrapping import NavegadorPanel
-from vista.central_panel.view_chat import ChatPanel
+from vista.chat import ChatSelectorPanel
 from vista.central_panel.view_correos import CorreosPanel
 from vista.central_panel.view_enlaces import EnlacesPanel
 
@@ -96,7 +96,7 @@ class PanelCentral(ttk.Frame):
             "Tareas": NotasPanel,
             "Alarmas": AlarmaPanel,
             "Enlaces": EnlacesPanel,
-            "Chat": ChatPanel,
+            "Chat": ChatSelectorPanel,
         }
 
         for sub_tab_text in sub_tabs:

@@ -196,7 +196,8 @@ class CorreosPanel(ttk.Frame):
                 correos = self.cliente.obtener_bandeja()
                 self.root.after(0, lambda: self._conexion_exitosa(correos, user))
             except Exception as e:
-                self.root.after(0, lambda: self._conexion_fallida(str(e)))
+                msg = str(e)
+                self.root.after(0, lambda m=msg: self._conexion_fallida(m))
 
         threading.Thread(target=tarea, daemon=True).start()
 
@@ -393,7 +394,8 @@ class CorreosPanel(ttk.Frame):
                 )
                 self.root.after(0, self._envio_exitoso)
             except Exception as e:
-                self.root.after(0, lambda: self._envio_fallido(str(e)))
+                msg = str(e)
+                self.root.after(0, lambda m=msg: self._envio_fallido(m))
 
         threading.Thread(target=tarea, daemon=True).start()
 

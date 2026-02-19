@@ -1,1 +1,11 @@
 /.read.md
+
+# Entorno virtual
+venv/
+
+# Bytecode Python
+__pycache__/
+*.py[cod]
+
+# Variables de entorno (credenciales)
+.env

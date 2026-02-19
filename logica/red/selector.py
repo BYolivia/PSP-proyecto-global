@@ -1,6 +1,10 @@
 import socket
 import sys
+import os
 import threading
+
+# Permite ejecutar este script directamente desde cualquier directorio
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from logica.red.servidor import iniciar_servidor, autenticar_cliente, PUERTO_BROADCAST
 from logica.red.cliente import conectar_servidor

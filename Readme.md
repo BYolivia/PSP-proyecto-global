@@ -1,4 +1,3 @@
-m
 # 🚀 ProyectoGlobal: Aplicaciones Multi-Funcionales
 
 ## Indice ##
@@ -22,44 +21,42 @@ La aplicación sirve como un panel de control que permite al usuario gestionar p
 
 ## 🛠️ Requisitos e Instalación
 
-Para ejecutar la aplicación, debes tener **Python 3** instalado y ejecutar en terminal para activar el entorno virtual
+Necesitas tener **Python 3** y **VLC** instalados en el sistema.
 
-```bash 
-source venv/bin/activate
+```bash
+# Dependencia del sistema (Linux)
+sudo apt install python3-tk vlc
 ```
 
-A continuación se detallan los paquetes necesarios y su comando de instalación.
+### 🔽 Clonar el repositorio
 
-### 📦 Dependencias de Python
+```bash
+git clone https://github.com/BYolivia/PSP-proyecto-global.git
+cd PSP-proyecto-global
+```
 
-Se recomienda instalar las dependencias en un **entorno virtual** (`venv`).
+### 📦 Crear el entorno virtual e instalar dependencias
 
-| **Paquete**              | **Instalación**                       | **Uso principal**                          |
-| ------------------------ | ------------------------------------- | ------------------------------------------ |
-| **tkinter**              | `sudo apt install python3-tk` (Linux) | Interfaz gráfica (GUI)                     |
-| **matplotlib**           | `pip install matplotlib`              | Gráficas de recursos del sistema           |
-| **psutil**               | `pip install psutil`                  | Monitorización del sistema (CPU, RAM, red) |
-| **python-vlc**           | `pip install python-vlc`              | Reproducción de audio/música               |
-| **beautifulsoup4** (bs4) | `pip install bs4`                     | Extracción de datos (Scraping)             |
-| **requests**             | `pip install requests`                | Solicitudes HTTP (para Scraping)           |
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
 
-### Se recomienda usar el **install.sh** para hacer la instalación automática de las dependencias.
-### ⚙️ Como Ejecutar
+### ▶️ Ejecutar la aplicación
 
-Una vez instaladas las dependencias, ejecuta la aplicación desde el directorio principal del proyecto (el directorio que contiene la carpeta `ProyectoGlobal`):
+```bash
+python -m ProyectoGlobal
+```
 
-Bash
+### ⏹️ Salir del entorno virtual
 
+```bash
+deactivate
+```
 
 > [!NOTE]
-> Asegúrate de ejecutar este comando desde la carpeta del proyecto tras haber instalado las dependencias.
-
-
-Bash `python3 __main__.py`
-
-o si es ejecutado desde el IDE pyCharm puede darle al boton de play <svg width="1em" height="1em" viewBox="0 0 16 16" fill="green" style="vertical-align: middle;">
-  <path d="M11.596 8.697l-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.803.803 0 0 1 0 1.393z"/>
-</svg> para ejecutar el proyecto habiendo seleccionado el archivo \_\_main\_\_.py
+> La próxima vez que abras el proyecto solo necesitas activar el entorno (`source venv/bin/activate`) y ejecutarlo.
 
 
 ---
@@ -150,12 +147,3 @@ o si es ejecutado desde el IDE pyCharm puede darle al boton de play <svg width="
 
 
 
-servidor de correo:
-IP del servidor: 10.10.0.101
-
-servidor de correoc webmail port(no poner '_'): 20_000
-
-
-
-Mi correo: josep@psp.es
-contraseña: 1234

@@ -18,6 +18,8 @@ class CorreosPanel(ttk.Frame):
         self.root = root
         self.cliente = CorreoClient()
         self.correos_cache = []
+        self._autorefresh_id = None
+        self._refreshing = False
 
         # Frames apilados (login, bandeja, redactar)
         self.frame_login = ttk.Frame(self)
@@ -207,6 +209,7 @@ class CorreosPanel(ttk.Frame):
         self.lbl_usuario.config(text=f"  {user}")
         self._poblar_bandeja(correos)
         self._mostrar_frame(self.frame_bandeja)
+        self._iniciar_autorefresh()
 
     def _conexion_fallida(self, error):
         self.btn_conectar.config(state="normal")
@@ -253,6 +256,9 @@ class CorreosPanel(ttk.Frame):
         self.tree.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
+        self.tree.tag_configure("no_leido", font=(FUENTE_FAMILIA, 9, "bold"))
+        self.tree.tag_configure("leido",    font=(FUENTE_FAMILIA, 9))
+
         self.tree.bind("<Double-1>", self._on_doble_clic_correo)
 
         # Área de lectura de correo
@@ -264,19 +270,35 @@ class CorreosPanel(ttk.Frame):
         self.txt_lectura.pack(fill="both", expand=True, padx=10, pady=(0, 10))
 
     def _poblar_bandeja(self, correos):
-        """Rellena el Treeview con la lista de correos."""
+        """Rellena el Treeview con la lista de correos preservando la selección."""
         self.correos_cache = correos
+        sel_actual = self.tree.selection()
+        uid_sel = sel_actual[0] if sel_actual else None
+
         self.tree.delete(*self.tree.get_children())
         for c in correos:
+            tag = "leido" if c.get("leido", True) else "no_leido"
             self.tree.insert("", "end", iid=c["uid"],
-                             values=(c["de"], c["asunto"], c["fecha"]))
+                             values=(c["de"], c["asunto"], c["fecha"]),
+                             tags=(tag,))
+
+        if uid_sel and self.tree.exists(uid_sel):
+            self.tree.selection_set(uid_sel)
+            self.tree.see(uid_sel)
 
     def _on_doble_clic_correo(self, event):
-        """Muestra el contenido del correo seleccionado."""
+        """Muestra el contenido del correo seleccionado y lo marca como leído."""
         sel = self.tree.selection()
         if not sel:
             return
         uid = sel[0]
+
+        # Marcar visualmente como leído de inmediato
+        self.tree.item(uid, tags=("leido",))
+        for c in self.correos_cache:
+            if c["uid"] == uid:
+                c["leido"] = True
+                break
 
         self.txt_lectura.config(state="normal")
         self.txt_lectura.delete("1.0", "end")
@@ -286,6 +308,7 @@ class CorreosPanel(ttk.Frame):
         def tarea():
             try:
                 contenido = self.cliente.leer_correo(uid)
+                self.cliente.marcar_leido(uid)
                 self.root.after(0, lambda: self._mostrar_contenido(contenido))
             except Exception as e:
                 self.root.after(0, lambda: self._mostrar_contenido(f"Error: {e}"))
@@ -311,6 +334,7 @@ class CorreosPanel(ttk.Frame):
 
     def _on_logout(self):
         """Cierra sesión y vuelve al login."""
+        self._detener_autorefresh()
         self.cliente.desconectar()
         self.tree.delete(*self.tree.get_children())
         self.txt_lectura.config(state="normal")
@@ -410,8 +434,60 @@ class CorreosPanel(ttk.Frame):
         self.lbl_estado_envio.config(text=f"Error: {error}", foreground="red")
 
     # ==================================================================
+    # AUTO-REFRESCO
+    # ==================================================================
+
+    _INTERVALO_REFRESCO_MS = 1000
+
+    def _iniciar_autorefresh(self):
+        self._detener_autorefresh()
+        self._autorefresh_id = self.root.after(
+            self._INTERVALO_REFRESCO_MS, self._autorefresh_tick
+        )
+
+    def _autorefresh_tick(self):
+        """Lanzado desde el hilo principal. Si ya hay refresco en curso, reintenta en el siguiente ciclo."""
+        if self._refreshing:
+            self._autorefresh_id = self.root.after(
+                self._INTERVALO_REFRESCO_MS, self._autorefresh_tick
+            )
+            return
+
+        self._refreshing = True
+
+        def tarea():
+            try:
+                correos = self.cliente.obtener_bandeja()
+                self.root.after(0, lambda: self._fin_autorefresh(correos))
+            except Exception:
+                self.root.after(0, lambda: self._fin_autorefresh(None))
+
+        threading.Thread(target=tarea, daemon=True).start()
+
+    def _fin_autorefresh(self, correos):
+        """Siempre se ejecuta en el hilo principal."""
+        self._refreshing = False
+        if correos is not None:
+            self._poblar_bandeja(correos)
+        # Programar siguiente tick desde el hilo principal
+        self._autorefresh_id = self.root.after(
+            self._INTERVALO_REFRESCO_MS, self._autorefresh_tick
+        )
+
+    def _detener_autorefresh(self):
+        if self._autorefresh_id is not None:
+            self.root.after_cancel(self._autorefresh_id)
+            self._autorefresh_id = None
+        self._refreshing = False
+
+    # ==================================================================
     # UTILIDADES
     # ==================================================================
+
+    def cerrar(self):
+        """Limpieza al cerrar la aplicación: para el auto-refresco y desconecta IMAP."""
+        self._detener_autorefresh()
+        self.cliente.desconectar()
 
     def _mostrar_frame(self, frame):
         """Levanta el frame indicado al frente."""

@@ -3,18 +3,23 @@ import socket
 from logica.red.servidor import APP_FIRMA, PUERTO_BROADCAST
 
 
-def descubrir_servidores(timeout=5):
+def descubrir_servidores(timeout_sin_nuevos=10, callback=None, on_seen=None, stop_event=None):
     """Escucha broadcasts UDP para encontrar servidores disponibles.
 
-    Retorna una lista de tuplas (ip, puerto) de servidores encontrados.
+    - callback(ip, puerto): llamado cuando se descubre un servidor nuevo.
+    - on_seen(ip, puerto): llamado en cada broadcast valido (nuevos y ya conocidos).
+    - timeout_sin_nuevos: segundos sin nuevos servidores antes de parar (default 10).
+    - stop_event: threading.Event para cancelar la busqueda desde fuera.
+    Retorna una lista de tuplas (ip, puerto).
     """
-    print(f"[DEBUG CLI] Iniciando descubrimiento UDP en puerto {PUERTO_BROADCAST} (timeout={timeout}s)")
+    import time
+    print(f"[DEBUG CLI] Iniciando descubrimiento UDP en puerto {PUERTO_BROADCAST} (timeout_sin_nuevos={timeout_sin_nuevos}s)")
     servidores = []
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     if hasattr(socket, "SO_REUSEPORT"):
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
-    sock.settimeout(timeout)
+    sock.settimeout(1)
     try:
         sock.bind(("", PUERTO_BROADCAST))
         print(f"[DEBUG CLI] Socket UDP enlazado a '':{PUERTO_BROADCAST}")
@@ -23,23 +28,37 @@ def descubrir_servidores(timeout=5):
         sock.close()
         return servidores
 
+    ultimo_encontrado = time.time()
     try:
         while True:
-            datos, direccion = sock.recvfrom(1024)
-            mensaje = datos.decode("utf-8")
-            print(f"[DEBUG CLI] Paquete UDP recibido de {direccion}: {mensaje!r}")
-            if verificar_firma(mensaje):
-                partes = mensaje.split("|")
-                if len(partes) == 2:
-                    puerto_servidor = int(partes[1])
-                    entrada = (direccion[0], puerto_servidor)
-                    if entrada not in servidores:
-                        servidores.append(entrada)
-                        print(f"[DEBUG CLI] Servidor descubierto: {entrada[0]}:{entrada[1]}")
-            else:
-                print(f"[DEBUG CLI] Firma no valida, ignorado")
-    except socket.timeout:
-        print(f"[DEBUG CLI] Timeout alcanzado")
+            if stop_event and stop_event.is_set():
+                print(f"[DEBUG CLI] Busqueda cancelada externamente")
+                break
+            if time.time() - ultimo_encontrado >= timeout_sin_nuevos:
+                print(f"[DEBUG CLI] {timeout_sin_nuevos}s sin nuevos servidores, finalizando")
+                break
+            try:
+                datos, direccion = sock.recvfrom(1024)
+                mensaje = datos.decode("utf-8")
+                print(f"[DEBUG CLI] Paquete UDP recibido de {direccion}: {mensaje!r}")
+                if verificar_firma(mensaje):
+                    partes = mensaje.split("|")
+                    if len(partes) == 2:
+                        puerto_servidor = int(partes[1])
+                        ip = direccion[0]
+                        if on_seen:
+                            on_seen(ip, puerto_servidor)
+                        entrada = (ip, puerto_servidor)
+                        if entrada not in servidores:
+                            servidores.append(entrada)
+                            ultimo_encontrado = time.time()
+                            print(f"[DEBUG CLI] Servidor descubierto: {ip}:{puerto_servidor}")
+                            if callback:
+                                callback(ip, puerto_servidor)
+                else:
+                    print(f"[DEBUG CLI] Firma no valida, ignorado")
+            except socket.timeout:
+                pass
     finally:
         sock.close()
 

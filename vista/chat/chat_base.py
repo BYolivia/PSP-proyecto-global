@@ -12,6 +12,7 @@ class ChatBase(ttk.Frame):
         self.root = root
         self.chat_history = None
         self.chat_input_entry = None
+        self._btn_enviar = None
         self.socket = None
 
     def crear_interfaz_chat(self, parent_frame, titulo="Chat", boton_accion_texto=None, boton_accion_callback=None):
@@ -55,10 +56,11 @@ class ChatBase(ttk.Frame):
         self.chat_input_entry.grid(row=0, column=0, sticky="ew", padx=(0, 5))
         self.chat_input_entry.bind('<Return>', self.enviar_mensaje)
 
-        ttk.Button(
+        self._btn_enviar = ttk.Button(
             frame_input, text="Enviar",
             command=self.enviar_mensaje, style='Action.TButton'
-        ).grid(row=0, column=1, sticky="e")
+        )
+        self._btn_enviar.grid(row=0, column=1, sticky="e")
 
     def agregar_mensaje(self, remitente, texto):
         """Agrega un mensaje al historial."""
@@ -75,6 +77,13 @@ class ChatBase(ttk.Frame):
     def enviar_mensaje(self, event=None):
         """Debe ser implementado por las subclases."""
         raise NotImplementedError
+
+    def bloquear_entrada(self):
+        """Deshabilita el campo de texto y el boton de enviar."""
+        if self.chat_input_entry:
+            self.chat_input_entry.config(state=tk.DISABLED)
+        if self._btn_enviar:
+            self._btn_enviar.config(state=tk.DISABLED)
 
     def cerrar_conexion(self):
         """Cierra el socket si esta activo."""

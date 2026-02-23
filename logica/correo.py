@@ -99,6 +99,7 @@ class CorreoClient:
 
     def obtener_bandeja(self):
         """Lista correos del INBOX. Devuelve lista de dicts con uid, de, asunto, fecha."""
+        self.imap.noop()   # Fuerza sincronización con el servidor antes de leer
         self.imap.select("INBOX")
         status, data = self.imap.uid("search", None, "ALL")
         if status != "OK":
@@ -108,9 +109,12 @@ class CorreoClient:
         correos = []
 
         for uid in reversed(uids[-100:]):  # Últimos 100, más recientes primero
-            status, msg_data = self.imap.uid("fetch", uid, "(BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE)])")
+            status, msg_data = self.imap.uid("fetch", uid, "(FLAGS BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE)])")
             if status != "OK" or not msg_data[0]:
                 continue
+
+            info_raw = msg_data[0][0].decode("utf-8", errors="replace")
+            leido = "\\Seen" in info_raw
 
             raw = msg_data[0][1]
             msg = email.message_from_bytes(raw)
@@ -124,9 +128,18 @@ class CorreoClient:
                 "de": de,
                 "asunto": asunto,
                 "fecha": fecha,
+                "leido": leido,
             })
 
         return correos
+
+    def marcar_leido(self, uid):
+        """Marca un correo como leído en el servidor."""
+        try:
+            self.imap.select("INBOX")
+            self.imap.uid("store", uid.encode(), "+FLAGS", "\\Seen")
+        except Exception:
+            pass
 
     def leer_correo(self, uid):
         """Lee el contenido completo de un correo por UID. Devuelve texto plano."""

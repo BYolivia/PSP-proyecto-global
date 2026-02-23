@@ -1,6 +1,9 @@
+import tkinter as tk
+from tkinter import ttk
 import threading
 from vista.chat.chat_base import ChatBase
 from logica.red.cliente import conectar_servidor
+from vista.config import *
 
 PREFIJO_NOMBRE = "__NOMBRE__:"
 
@@ -8,12 +11,13 @@ PREFIJO_NOMBRE = "__NOMBRE__:"
 class ChatClientePanel(ChatBase):
     """Vista de chat para el rol de cliente."""
 
-    def __init__(self, parent, root, ip, puerto, clave, *args, **kwargs):
+    def __init__(self, parent, root, ip, puerto, clave, on_auth_error=None, *args, **kwargs):
         super().__init__(parent, root, *args, **kwargs)
         self.ip = ip
         self.puerto = puerto
         self.clave = clave
         self.nombre = None
+        self.on_auth_error = on_auth_error
         self.crear_interfaz_chat(
             self, titulo="Chat - Cliente",
             boton_accion_texto="Desconectar",
@@ -34,7 +38,10 @@ class ChatClientePanel(ChatBase):
                 self.recibir_mensajes(extra)
             else:
                 print(f"[DEBUG CLI-GUI] Conexion fallida")
-                self.root.after(0, self.agregar_mensaje_sistema, "Error: no se pudo conectar o clave incorrecta")
+                if self.on_auth_error:
+                    self.root.after(0, self.on_auth_error)
+                else:
+                    self.root.after(0, self.agregar_mensaje_sistema, "Error: no se pudo conectar o clave incorrecta")
 
         hilo = threading.Thread(target=hilo_conexion, daemon=True)
         hilo.start()
@@ -67,14 +74,14 @@ class ChatClientePanel(ChatBase):
                 datos = self.socket.recv(4096)
                 if not datos:
                     print("[DEBUG CLI-GUI] Datos vacios recibidos (servidor cerro)")
-                    self.root.after(0, self.agregar_mensaje_sistema, "El servidor cerro la conexion")
+                    self.root.after(0, self._servidor_desconectado)
                     break
                 mensaje = datos.decode("utf-8")
                 print(f"[DEBUG CLI-GUI] Datos crudos recibidos: {datos!r}")
                 self._procesar_mensaje(mensaje)
         except (ConnectionResetError, OSError) as e:
             print(f"[DEBUG CLI-GUI] Error en recepcion: {e}")
-            self.root.after(0, self.agregar_mensaje_sistema, "Conexion perdida con el servidor")
+            self.root.after(0, self._servidor_desconectado)
 
     def _actualizar_titulo(self):
         if self.nombre:
@@ -96,6 +103,46 @@ class ChatClientePanel(ChatBase):
             self.agregar_mensaje_sistema("Error al enviar mensaje")
 
         return "break" if event else None
+
+    def _servidor_desconectado(self):
+        """Bloquea la entrada y muestra popup cuando el servidor cierra la conexion."""
+        self.cerrar_conexion()
+        self.bloquear_entrada()
+
+        dialogo = tk.Toplevel(self.root)
+        dialogo.title("Servidor desconectado")
+        dialogo.geometry("320x140")
+        dialogo.resizable(False, False)
+        dialogo.transient(self.root)
+        dialogo.grab_set()
+
+        frame = ttk.Frame(dialogo, padding=20)
+        frame.pack(expand=True, fill="both")
+
+        ttk.Label(
+            frame, text="El servidor se ha cerrado.",
+            font=FUENTE_NEGOCIOS
+        ).pack(pady=(0, 15))
+
+        frame_btns = ttk.Frame(frame)
+        frame_btns.pack()
+
+        def volver():
+            dialogo.destroy()
+            self.desconectar_y_volver()
+
+        def ver_chat():
+            dialogo.destroy()
+
+        ttk.Button(
+            frame_btns, text="Volver al inicio",
+            command=volver, style='Action.TButton'
+        ).pack(side="left", padx=5)
+
+        ttk.Button(
+            frame_btns, text="Ver el chat",
+            command=ver_chat
+        ).pack(side="left", padx=5)
 
     def desconectar_y_volver(self):
         """Desconecta del servidor y vuelve al selector."""

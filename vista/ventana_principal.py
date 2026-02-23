@@ -171,9 +171,13 @@ class VentanaPrincipal(tk.Tk):
         self.detener_actualizacion_reloj()
         self.detener_actualizacion_clima()
 
-        # Detiene el hilo de TrafficMeter y el ciclo de repintado del gráfico
         if self.panel_central:
             self.panel_central.detener_actualizacion_automatica()
+
+            # Desconectar correo si hay sesión activa
+            panel_correos = self.panel_central.modulos.get("Correos")
+            if panel_correos:
+                panel_correos.cerrar()
 
         self.destroy()
         print("Aplicación cerrada limpiamente.")

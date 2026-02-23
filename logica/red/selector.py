@@ -20,6 +20,10 @@ def obtener_ip_local():
             return "127.0.0.1"
 
 
+_clientes = []       # lista de (conn, addr)
+_clientes_lock = threading.Lock()
+
+
 def modo_servidor():
     servidor, puerto, contrasena_alfa, _broadcast_stop = iniciar_servidor()
     clave_acceso = f"{puerto}#{contrasena_alfa}"
@@ -27,8 +31,22 @@ def modo_servidor():
     print(f"[SERVIDOR] IP: {ip}")
     print(f"[SERVIDOR] Escuchando en puerto {puerto}")
     print(f"[SERVIDOR] Clave de acceso: {clave_acceso}")
-    print("[SERVIDOR] Esperando clientes...\n")
+    print("[SERVIDOR] Esperando clientes... (escribe para enviar a todos, Ctrl+C para salir)\n")
 
+    hilo_accept = threading.Thread(target=_aceptar_clientes, args=(servidor, clave_acceso), daemon=True)
+    hilo_accept.start()
+
+    try:
+        while True:
+            mensaje = input()
+            if mensaje:
+                _broadcast(f"[SERVIDOR]: {mensaje}")
+    except (KeyboardInterrupt, EOFError):
+        print("\n[SERVIDOR] Cerrando...")
+        servidor.close()
+
+
+def _aceptar_clientes(servidor, clave_acceso):
     try:
         while True:
             conn, addr = servidor.accept()
@@ -36,18 +54,19 @@ def modo_servidor():
             if autenticar_cliente(datos, clave_acceso):
                 conn.sendall("OK".encode("utf-8"))
                 print(f"[SERVIDOR] Cliente {addr[0]}:{addr[1]} autenticado")
-                hilo = threading.Thread(target=manejar_cliente, args=(conn, addr), daemon=True)
+                with _clientes_lock:
+                    _clientes.append((conn, addr))
+                hilo = threading.Thread(target=_manejar_cliente, args=(conn, addr), daemon=True)
                 hilo.start()
             else:
                 conn.sendall("DENIED".encode("utf-8"))
                 conn.close()
                 print(f"[SERVIDOR] Cliente {addr[0]}:{addr[1]} rechazado (clave incorrecta)")
-    except KeyboardInterrupt:
-        print("\n[SERVIDOR] Cerrando...")
-        servidor.close()
+    except OSError:
+        pass
 
 
-def manejar_cliente(conn, addr):
+def _manejar_cliente(conn, addr):
     etiqueta = f"{addr[0]}:{addr[1]}"
     try:
         while True:
@@ -56,12 +75,25 @@ def manejar_cliente(conn, addr):
                 break
             mensaje = datos.decode("utf-8")
             print(f"[{etiqueta}] {mensaje}")
-            conn.sendall(f"Echo: {mensaje}".encode("utf-8"))
+            _broadcast(f"{etiqueta}: {mensaje}", origen=conn)
     except (ConnectionResetError, OSError):
         pass
     finally:
+        with _clientes_lock:
+            _clientes[:] = [(c, a) for c, a in _clientes if c is not conn]
         print(f"[SERVIDOR] Cliente {etiqueta} desconectado")
         conn.close()
+
+
+def _broadcast(mensaje, origen=None):
+    """Envía un mensaje a todos los clientes excepto al origen."""
+    with _clientes_lock:
+        destinatarios = [(c, a) for c, a in _clientes if c is not origen]
+    for conn, addr in destinatarios:
+        try:
+            conn.sendall(mensaje.encode("utf-8"))
+        except OSError:
+            pass
 
 
 def buscar_servidores():
